@@ -1,0 +1,17 @@
+{
+  "name": "Mi panel",
+  "short_name": "Mi panel",
+  "description": "Clientes, rutinas, cobros y dietas en el celular, sin gastar datos.",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1524",
+  "theme_color": "#0b1524",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
