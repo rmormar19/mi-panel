@@ -312,7 +312,7 @@ V['']=function(){var L=CL(),dow=new Date().getDay(),hoyS=semVieja()?[]:sesionesD
  s+='<div class="grid">'+
   tile('clientes','cli','Clientes',L.length+' en total',activos)+
   tile('rutinas','rut','Rutinas',sesSem+' sesiones esta semana')+
-  tile('cobros','cob','Cobros',cb.sin?'sin datos de Mi negocio':cb.pend.length?cb.pend.length+' por cobrar · '+usd(cb.pend.reduce(function(a,x){return a+x.cuota;},0)):'Todo al día',cb.sin?null:cb.pend.length||null,'on')+
+  tile('cobros','cob','Cobros',cb.sin?'sin datos de Mi negocio':cb.pend.length?cb.pend.length+' por cobrar · '+usd(cb.pend.reduce(function(a,x){return a+x.cuota;},0)):'Todo al día',cb.sin?null:cb.pend.length||null)+
   tile('agenda','age','Agenda',hoyS.length?hoyS.length+' sesiones hoy':'Hoy sin sesiones')+
   tile('progreso','prog','Progreso',plan?'Cumplimiento '+Math.round(ok/plan*100)+' %':'Sin sesiones aún')+
   tile('dietas','diet','Dietas',dietas+' planes')+
