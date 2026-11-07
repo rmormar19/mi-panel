@@ -698,7 +698,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
  if(d.h&&U.hoja){var ph=d.h.split('|'),H=U.hoja,tx=$('#hnota');if(tx)H.txt=tx.value;var mo=$('#hmonto');if(mo)H.monto=mo.value;
   if(ph[0]==='n')H.n=+ph[1];if(ph[0]==='rir')H.rir=H.rir===ph[1]?null:ph[1];if(ph[0]==='tag'){var ix=H.tags.indexOf(ph[1]);if(ix>=0)H.tags.splice(ix,1);else H.tags.push(ph[1]);}
   if(ph[0]==='medio')H.medio=ph[1];if(ph[0]==='dia')H.dia=+ph[1];if(ph[0]==='wt')H.wt=ph[1];render();return;}
- if(d.pago){var Cp=cobros(),xp=Cp.L.filter(function(z){return z.id===d.pago;})[0];if(!xp)return;U.hoja={t:'pago',nid:xp.id,nombre:xp.nombre,mes:Cp.mes,monto:String(xp.cuota||''),medio:'Transferencia',dia:0};render();return;}
+ if(d.pago){var Cp=cobros(),xp=Cp.L.filter(function(z){return z.id===d.pago;})[0];if(!xp)return;U.hoja={t:'pago',nid:xp.id,pid:(xp.c&&xp.c.id)||null,nombre:xp.nombre,mes:Cp.mes,monto:String(xp.cuota||''),medio:'Transferencia',dia:0};render();return;}
  if(d.dia!=null){U.dia=+d.dia;render();return;}
  if(d.tab){var p=d.tab.split('|');U.tab[p[0]]=p[1];history.replaceState(null,'','#/c/'+encodeURIComponent(p[0])+'/'+p[1]);render();return;}
  var a=d.act;if(!a)return;
@@ -716,7 +716,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
   if(notaT){encolar(H.cid,{tipo:'nota',dia:H.dia,ejercicio:{nombre:H.e.nombre},tags:H.tags.indexOf('Molestia')>=0?['dolor']:[],observacion:{texto:H.e.nombre+' — '+notaT+' · desde tu celular',fecha:H.iso}},[nom1(c4.nombre)+' · '+H.e.nombre,'«'+notaT+'»'],'nota|'+kk);hizo=true;}
   if(!hizo){toast('Elegí un RIR o escribí una nota');return;}U.hoja=null;render();toast('Guardado en el celular');return;}
  if(a==='g-pago'){var Hp=U.hoja,mt=parseFloat(String((($('#hmonto')||{}).value)||'').replace(',','.'));if(!(mt>0)){toast('Revisá el monto');return;}var fp=new Date();fp.setDate(fp.getDate()-Hp.dia);
-  encolar(null,{tipo:'pago',cliente:Hp.nid,mes:Hp.mes,monto:mt,fecha:ymd(fp),medio:Hp.medio},[nom1(Hp.nombre)+' · cuota de '+MES[+Hp.mes.slice(5)-1],usd(mt)+' · '+Hp.medio.toLowerCase()],'pago|'+Hp.nid+'|'+Hp.mes);U.hoja=null;render();toast('Guardado en el celular');return;}
+  encolar(Hp.pid||null,{tipo:'pago',cliente:Hp.nid,mes:Hp.mes,monto:mt,fecha:ymd(fp),medio:Hp.medio},[nom1(Hp.nombre)+' · cuota de '+MES[+Hp.mes.slice(5)-1],usd(mt)+' · '+Hp.medio.toLowerCase()],'pago|'+Hp.nid+'|'+Hp.mes);U.hoja=null;render();toast('Guardado en el celular');return;}
  if(a==='sync'){if(COLA.length){U.hoja={t:'enviar'};render();return;}return actualizar(false);}
  if(a==='abrir'){PREF.abrir=!PREF.abrir;guarda(K_PREF,PREF);render();return;}
  if(a==='tema'){var cl=!document.documentElement.classList.contains('claro');document.documentElement.classList.toggle('claro',cl);try{localStorage.setItem('mp-tema',cl?'claro':'oscuro');}catch(e){}
