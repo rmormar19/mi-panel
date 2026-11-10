@@ -324,8 +324,8 @@ var nom1=function(n){return String(n||'').split(' ')[0];};
 var COLS=['#6e9bff','#5cc98c','#ef8d45','#a99ad6','#4fd1e6','#9cbbff','#e5604a','#f2c94c'];
 var col=function(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))>>>0;return COLS[h%COLS.length];};
 /* sesión con vos = tiene fuerza (o fue un día de solo cardio). El cardio que hace por su cuenta no es sesión: igual que en el Monitor */
-/* 9 nov 2026 · también cuentan los días con sólo cardio o agendados por el cliente (para poder marcar «No viene») */
-var tiene=function(d){return !!d&&((d.ejercicios||[]).some(function(e){return e&&e.nombre&&String(e.nombre).trim();})||!!d.soloCardio||(d.cardio||[]).some(function(k){return k&&k.tipo;})||!!d.agenda);};
+/* 9 nov 2026 · también cuentan los días con cardio en el gimnasio o agendados (para poder marcar «No viene») */
+var tiene=function(d){return !!d&&((d.ejercicios||[]).some(function(e){return e&&e.nombre&&String(e.nombre).trim();})||!!d.soloCardio||(d.cardio||[]).some(function(k){return k&&k.tipo&&k.cuando!=='propio';})||!!d.agenda);};   /* el cardio que hace por su cuenta no es un turno */
 var cardioSolo=function(d){return !!d&&!tiene(d)&&(d.cardio||[]).some(function(z){return z&&z.tipo;});};
 var cardioTx=function(z){var T={caminata:'Caminata',trote:'Trote',correr:'Correr',bici:'Bici',eliptica:'Elíptica',remo:'Remo'},c=String(z.cant||z.min||'').trim();return (T[z.tipo]||z.tipo)+(c?' '+c+(z.modo==='km'?' km':' min'):'');};
 var seriesDe=function(e){return (e.series||[]).filter(function(s){return s&&(s.reps||s.peso);});};
@@ -695,7 +695,7 @@ V.turno=function(){var dow=new Date().getDay(),L=semVieja()?[]:sesionesDia(dow),
  s+='<div class="tabs" role="group" aria-label="Hora">'+hs.map(function(h){var n=L.filter(function(x){return (x.h?String(x.h).split(':')[0]:'—')===h;}).length;return '<button type="button" data-hora="'+h+'" aria-pressed="'+(h===U.hora)+'">'+(h==='—'?'Sin hora':h+' h')+' · '+n+'</button>';}).join('')+'</div>'+
   (pendT.length>1?'<button type="button" class="pri todos" data-act="todosHechos">Marcar '+(pendT.length===Lh.length?'las '+pendT.length:pendT.length)+' como hechas</button>':'');
  L.filter(function(x){return (x.h?String(x.h).split(':')[0]:'—')===U.hora;}).forEach(function(x){var c=x.c,d=x.s.d,iso=ymd(x.s.f),E=(d.ejercicios||[]).filter(function(e){return e.nombre;});
-  s+='<div class="tc"><button type="button" class="tch" data-go="c/'+esc(c.id)+'"><span class="ini" style="background:'+col(c.nombre)+'">'+esc(ini(c.nombre))+'</span><span class="tx"><b>'+esc(c.nombre)+'</b><small>'+(E.length?esc(gTxt(d.grupo))+' · '+E.length+' ejercicios':((d.cardio||[]).length?'Cardio':'Agendado por el cliente'))+(x.h&&String(x.h).indexOf(':')>0?' · '+x.h:'')+'</small></span><span class="chip '+ESCH[x.s.e]+'">'+ESTX[x.s.e]+(x.s.local&&x.s.local.pend?' · sin enviar':'')+'</span></button>'+
+  s+='<div class="tc"><button type="button" class="tch" data-go="c/'+esc(c.id)+'"><span class="ini" style="background:'+col(c.nombre)+'">'+esc(ini(c.nombre))+'</span><span class="tx"><b>'+esc(c.nombre)+'</b><small>'+(E.length?esc(gTxt(d.grupo))+' · '+E.length+' ejercicios':((d.cardio||[]).length?'Cardio':'Agendado'))+(x.h&&String(x.h).indexOf(':')>0?' · '+x.h:'')+'</small></span><span class="chip '+ESCH[x.s.e]+'">'+ESTX[x.s.e]+(x.s.local&&x.s.local.pend?' · sin enviar':'')+'</span></button>'+
    (ausente(c)?'<div class="aviso" style="margin:4px 0 8px">'+esc((c.estado.txt||ESTADO[c.estado.e][0]))+'</div>':'')+
    E.map(function(e,j){var h=topSerie(e),a=anterior(c,e.nombre),ss=seriesDe(e),s0=ss[0]||{},nota=anotado(c.id,iso,e.nombre);
     var hh=hechasEj(c.id,iso,e),todas=ss.length&&hh===ss.length;
