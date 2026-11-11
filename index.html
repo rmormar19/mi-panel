@@ -361,9 +361,24 @@ div.row .tx b{white-space:normal}
 html,body,*{touch-action:manipulation}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 input,textarea,select,input.in,textarea.wab,.minin{font-size:16px!important}
+/* 10 nov 2026 · presentación al abrir, igual a la de la app del cliente */
+.splash{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,rgba(var(--a1rgb),.16),transparent 55%),var(--bg);cursor:pointer;transition:opacity .45s ease,visibility .45s}
+.splash.out{opacity:0;visibility:hidden;pointer-events:none}
+.splash .sp-in{display:flex;flex-direction:column;align-items:center;gap:14px}
+.sp-tile{width:96px;height:96px;border-radius:29px;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--surf3),var(--surf));border:1px solid var(--line2);box-shadow:inset 0 1px 0 rgba(var(--fg),.06),0 0 64px rgba(var(--a1rgb),.4);animation:spPop .6s cubic-bezier(.2,.9,.25,1.2) both}
+.sp-tile svg{width:56px;height:56px}
+.sp-draw{stroke-dasharray:240;stroke-dashoffset:240;animation:spTrazo 1s .25s cubic-bezier(.6,.1,.2,1) forwards}
+.sp-wm b{display:block;font-family:var(--d);font-weight:800;font-size:52px;line-height:1;letter-spacing:-1.5px;text-align:center;background:linear-gradient(90deg,var(--a1),var(--cya));-webkit-background-clip:text;background-clip:text;color:transparent;animation:spSube .7s .35s cubic-bezier(.2,.8,.2,1) both}
+.sp-wm span{display:block;margin-top:6px;font-family:var(--d);font-weight:700;font-size:12px;letter-spacing:6px;padding-left:6px;text-align:center;color:var(--tx3);animation:spSube .7s .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes spPop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes spTrazo{to{stroke-dashoffset:0}}
+@keyframes spSube{from{opacity:.001;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.splash{display:none}}
 </style>
 </head>
 <body>
+<div class="splash" id="splash" aria-hidden="true"><div class="sp-in"><div class="sp-tile"><svg viewBox="0 0 100 100"><defs><linearGradient id="gSp" x1="0" y1="1" x2="1" y2="0"><stop offset="0" style="stop-color:var(--a1)"/><stop offset="1" style="stop-color:var(--cya)"/></linearGradient></defs><path class="sp-draw" d="M20 80 L50 22 L80 80 M32 63 L44 56 L54 61 L68 51" fill="none" stroke="url(#gSp)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="sp-wm"><b>A medida</b><span>PANEL DE ENTRENADOR</span></div></div></div>
+<script>(function(){var sp=document.getElementById('splash');if(!sp)return;var ya=false,salir=function(){if(ya)return;ya=true;sp.classList.add('out');setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},600);};sp.addEventListener('click',salir);setTimeout(salir,1700);})();</script>
 <div class="wrap"><main id="v"></main></div>
 <nav class="nb" id="nb" aria-label="Secciones" hidden><div class="in">
   <button type="button" data-go="" aria-label="Inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button>
