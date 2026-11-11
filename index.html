@@ -378,6 +378,8 @@ input,textarea,select,input.in,textarea.wab,.minin{font-size:16px!important}
 .dsem>summary{list-style:none;cursor:pointer}.dsem>summary::-webkit-details-marker{display:none}
 .dsem>summary .fl{transition:transform .2s}.dsem[open]>summary .fl{transform:rotate(180deg)}
 .dsem[open]>summary{border-bottom-color:transparent}.dsr{padding:0 0 12px;border-bottom:1px solid var(--line)}
+/* 11 nov 2026 · «Antropometría» no entra en un recuadro chico: se corta en dos renglones con guion */
+.mas .tile b{overflow-wrap:break-word;hyphens:manual;line-height:1.1}
 </style>
 </head>
 <body>
@@ -542,7 +544,7 @@ V['']=function(){var L=CL(),dow=new Date().getDay(),hoyS=semVieja()?[]:sesionesD
   tile('rutinas','rut','Rutinas',sesSem+' en la semana')+
   tile('progreso','prog','Progreso',K.pc!=null?K.pc+' %':'sin datos')+
   tile('dietas','diet','Dietas',dietas+' plan'+(dietas===1?'':'es'))+
-  tile('medidas','med','Medidas',medir?medir+' para medir':'al día')+
+  tile('medidas','med','Antropo&shy;metría',medir?medir+' para medir':'al día')+
   tile('notas','nota','Notas','recientes')+'</div>';
  return s;};
 function tile(go,ic,t,sub,num,cls){return '<button type="button" class="tile '+(cls||'')+'" data-go="'+go+'">'+I[ic]+(num!=null?'<em class="num">'+num+'</em>':'')+'<b>'+t+'</b><span>'+sub+'</span></button>';}
@@ -567,7 +569,7 @@ V.c=function(id,tab){var c=porId(id);if(!c)return cab('No encontrado')+'<div cla
   '<div><span>'+cap1(MES[new Date().getMonth()])+'</span><b class="'+(pg?pg.pago?'ok':'wa':'')+'">'+(pg?pg.pago?'Pagó':'Debe':gymC?'Gimnasio':'—')+'</b></div>'+
   '<div title="'+esc(c.fase?(c.fase.f||'')+(c.fase.sem?' · semana '+c.fase.sem:'')+(c.fase.rir?' · '+c.fase.rir:''):'')+'"><span>Fase</span><b>'+esc(c.fase&&c.fase.f?String(c.fase.f).replace(/^ventana de /i,'').replace(/^./,function(x){return x.toUpperCase();}):'—')+'</b></div></div>';
  if(tab==='rutina')tab='semana';if(tab==='notas')tab='datos';   /* links viejos a pestañas que ya no están */
- var T=[['semana','Semana'],['dieta','Dieta'],['medidas','Medidas'],['datos','Datos']];
+ var T=[['semana','Semana'],['dieta','Dieta'],['medidas','Antropometría'],['datos','Datos']];
  s+='<div class="tabs" role="group" aria-label="Secciones de la ficha">'+T.map(function(t){return '<button type="button" data-tab="'+id+'|'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>';}).join('')+'</div>';
  var vj=function(x){return ausente(c)&&!tiene(x.d)&&x.e!=='li'&&!cardioSolo(x.d)&&enPauta(c,x.i)&&(!vh||+x.f<=+vh);};
  if(tab==='semana'){s+='<div class="card">'+sm.map(function(x){var h=horaDe(c,x.i),fila='<span class="hr num" style="font-size:13px;color:var(--tx3);min-width:46px">'+D3[x.i]+' '+x.f.getDate()+'</span><span class="tx"><b'+(vj(x)?' class="bl"':'')+'>'+(tiene(x.d)?esc(gTxt(x.d.grupo)):x.e==='li'?'Libre':cardioSolo(x.d)?'Cardio por su cuenta':vj(x)?(c.estado.e==='viaje'?'De viaje':'En pausa'):'Descanso')+'</b><small>'+(vj(x)?'no cuenta como falta':'')+(cardioSolo(x.d)?esc(x.d.cardio.filter(function(z){return z&&z.tipo;}).map(cardioTx).join(' · ')):'')+(tiene(x.d)?(h?h+' h · ':'')+(x.d.ejercicios||[]).filter(function(e){return e.nombre;}).length+' ejercicios'+(x.d.esfuerzo?' · esfuerzo '+esc(x.d.esfuerzo):''):'')+'</small></span>'+(vj(x)?'<span class="chip vj">'+(c.estado.e==='viaje'?'Viaje':'Pausa')+'</span>':x.e!=='de'?'<span class="chip '+ESCH[x.e]+'">'+(x.e==='li'&&!tiene(x.d)?'Libre':ESTX[x.e])+'</span>':'');return filaDia(c,id,x,fila);}).join('')+'</div>';
@@ -648,7 +650,7 @@ V.progreso=function(){var L=CL();return cab('Progreso','Sesiones hechas sobre pl
   return '<button type="button" class="row" data-go="c/'+esc(c.id)+'"><span class="tx"><b>'+esc(c.nombre)+'</b><small>'+(tp?Math.round(to/tp*100)+' % de cumplimiento':'sin semanas cerradas')+'</small></span><span class="mini" style="width:120px" aria-hidden="true">'+W.map(function(w){var p=w.plan?w.ok/w.plan:0;return '<i style="height:'+Math.max(8,w.plan/mx*100)+'%;display:flex;flex-direction:column-reverse;overflow:hidden"><i class="'+(w.act?'a':p>=.8?'v':p>=.5?'m':'r')+'" style="height:'+(w.plan?Math.max(w.ok?14:0,p*100):0)+'%;min-height:0;border-radius:0;flex:none"></i></i>';}).join('')+'</span>'+I.fl+'</button>';}).join('')+'</div>'+
   '<p class="muted" style="font-size:12.5px;margin:10px 4px">Cada barra es una semana: el alto son las sesiones planificadas y el color, las hechas. Verde: 80 % o más · ámbar: la mitad · rojo: menos · azul: esta semana.</p>';};
 V.medidas=function(){var L=CL(),con=L.filter(function(c){return tomas(c).length;});
- return cab('Medidas',con.length+' clientes con tomas')+'<div class="card" style="margin-top:8px">'+(con.map(function(c){var T=tomas(c),F=c.medidas.fechas;return filaCli(c,T.length+' toma'+(T.length===1?'':'s')+' · última '+new Date(F[T[T.length-1]]).toLocaleDateString('es-UY',{day:'numeric',month:'short'}),'','medidas');}).join('')||'<div class="vacio">Sin tomas.</div>')+'</div>';};
+ return cab('Antropometría',con.length+' clientes con tomas')+'<div class="card" style="margin-top:8px">'+(con.map(function(c){var T=tomas(c),F=c.medidas.fechas;return filaCli(c,T.length+' toma'+(T.length===1?'':'s')+' · última '+new Date(F[T[T.length-1]]).toLocaleDateString('es-UY',{day:'numeric',month:'short'}),'','medidas');}).join('')||'<div class="vacio">Sin tomas.</div>')+'</div>';};
 V.notas=function(){var T=[];CL().forEach(function(c){(c.observaciones||[]).forEach(function(o){T.push({c:c,o:o});});});T.sort(function(a,b){return String(b.o.fecha).localeCompare(String(a.o.fecha));});
  return cab('Notas','Observaciones de todos, de la más nueva a la más vieja')+'<div class="card" style="margin-top:8px">'+(T.slice(0,40).map(function(x){return '<div class="nota"><small>'+esc(x.c.nombre)+' · '+(x.o.fecha?new Date(x.o.fecha).toLocaleDateString('es-UY',{day:'numeric',month:'short'}):'')+'</small>'+esc(x.o.texto)+'</div>';}).join('')||'<div class="vacio">Sin observaciones.</div>')+'</div>';};
 
@@ -933,7 +935,7 @@ function avisos(){var G={no:[],sm:[],cob:[],med:[],est:[],env:[]},L=CL(),diasTx=
  var cb=cobros();if(!cb.sin&&cb.pend.length&&new Date().getDate()>=5)G.cob.push({t:yG(cb.pend.map(function(x){return nom1(x.nombre);})),s:usd(cb.pend.reduce(function(a,x){return a+x.cuota;},0))+' sin cobrar',go:'cobros'});
  L.forEach(function(c){if(ausente(c))return;var T=tomas(c);if(!T.length)return;var f=new Date(c.medidas.fechas[T[T.length-1]]),sem=Math.floor((Date.now()-f)/(7*864e5));if(sem>=8)G.med.push({c:c,t:nom1(c.nombre),s:'Le toca medirse · última: '+dm(f)+' (hace '+sem+' semanas)',go:'c/'+c.id+'/medidas'});});
  L.forEach(function(c){var e=c.estado&&c.estado.e;if(e==='viaje'||e==='pausa'){var vh=viajeHasta(c);G.est.push({c:c,t:nom1(c.nombre),s:(e==='viaje'?'De viaje':'En pausa')+(vh?' hasta el '+dm(vh):''),go:'c/'+c.id});}if(e==='retoma')G.est.push({c:c,t:nom1(c.nombre),s:'Retoma esta semana',go:'c/'+c.id});});
- return [['env','Sin enviar','bl'],['no','Faltas','no'],['sm','Sin marcar','wa'],['cob','Cobros','wa'],['med','Medidas','vi'],['est','Viajes y retomas','bl']].map(function(g){return {k:g[0],t:g[1],cls:g[2],L:G[g[0]]};}).filter(function(g){return g.L.length;});}
+ return [['env','Sin enviar','bl'],['no','Faltas','no'],['sm','Sin marcar','wa'],['cob','Cobros','wa'],['med','Antropometría','vi'],['est','Viajes y retomas','bl']].map(function(g){return {k:g[0],t:g[1],cls:g[2],L:G[g[0]]};}).filter(function(g){return g.L.length;});}
 V.resumen=function(){var L=CL(),cerr=U.rsem===1,h=+hoy0(),s=cab('Resumen semanal','Semana del '+dm(cerr?new Date(+lunDatos()-7*864e5):lunDatos()),false);
  s+='<div class="tabs" role="group"><button type="button" data-rsem="0" aria-pressed="'+!cerr+'">Esta semana</button><button type="button" data-rsem="1" aria-pressed="'+cerr+'">La que cerró</button></div>';
  var lunR=cerr?+lunDatos()-7*864e5:+lunDatos(),filas=[],plan=0,ok=0,fal=[],sube=0,nEj=0,conSab=false,conDom=false;
@@ -970,7 +972,7 @@ V.clientes=function(){var s=Vcli0(),q=N(U.q);if(q.length<3)return s.replace('pla
 /* ================= Ficha: acciones y la sesión de hoy ================= */
 var Vc0=V.c;
 V.c=function(id,tab){var s=Vc0(id,tab),c=porId(id);if(!c)return s;
- var acc='<div class="acc"><button type="button" data-act="wa" data-v="'+esc(id)+'"><span class="ic wa2">'+I.wa+'</span>WhatsApp</button><button type="button" data-act="tel" data-v="'+esc(id)+'"><span class="ic">'+I.tel+'</span>Llamar</button><button type="button" data-act="wa" data-v="'+esc(id)+'" data-wt="ses"><span class="ic">'+I.env+'</span>Rutina</button><button type="button" data-go="c/'+esc(id)+'/medidas"><span class="ic">'+I.med+'</span>Medidas</button></div>';
+ var acc='<div class="acc"><button type="button" data-act="wa" data-v="'+esc(id)+'"><span class="ic wa2">'+I.wa+'</span>WhatsApp</button><button type="button" data-act="tel" data-v="'+esc(id)+'"><span class="ic">'+I.tel+'</span>Llamar</button><button type="button" data-act="wa" data-v="'+esc(id)+'" data-wt="ses"><span class="ic">'+I.env+'</span>Rutina</button><button type="button" data-go="c/'+esc(id)+'/medidas"><span class="ic">'+I.med+'</span>Antropometría</button></div>';
  var hx=semVieja()?null:semana(c).filter(function(x){return +x.f===+hoy0()&&tiene(x.d);})[0],hoyC='';
  if(hx)hoyC='<div class="card hoyc"><div class="ch"><b>Hoy · '+DS[hx.i].toLowerCase()+'</b><span>'+esc(gTxt(hx.d.grupo))+(horaDe(c,hx.i)?' · '+horaDe(c,hx.i)+' h':'')+'</span></div><div class="seg3">'+
   [['verde','Hecho','ok'],['rojo','Faltó','fa'],['libre','No viene','li']].map(function(o){return '<button type="button" data-est="'+esc(id)+'|'+hx.i+'|'+o[0]+'" aria-pressed="'+(hx.e===o[2])+'" class="'+o[2]+'">'+(hx.e===o[2]?'✓ ':'')+o[1]+'</button>';}).join('')+'</div>'+
