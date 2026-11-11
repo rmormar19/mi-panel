@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b1524">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -357,6 +357,10 @@ div.row .tx b{white-space:normal}
 .aj2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.aj2 .sec{margin:0}
 .toast.conb{display:flex;align-items:center;gap:14px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:left}
 .toast.on.conb{pointer-events:auto}.toast button{font:700 13.5px var(--d);color:var(--a1);background:none;border:0;padding:6px 2px;min-height:36px}
+/* 10 nov 2026 · sin zoom (pedido de Ricky): ni por toques seguidos ni al escribir (iPhone agranda campos con letra < 16 px) */
+html,body,*{touch-action:manipulation}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+input,textarea,select,input.in,textarea.wab,.minin{font-size:16px!important}
 </style>
 </head>
 <body>
@@ -1113,6 +1117,9 @@ if(/#k=/.test(location.hash)){U.cod=(location.hash.match(/#k=([\w-]+)/)||[])[1];
 else render();
 if(CONF&&D&&PREF.abrir)actualizar(true);
 if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+/* sin zoom con dos dedos en iPhone (Safari ignora user-scalable) y sin zoom por doble toque */
+document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
+document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});
 window.MP={render:render,actualizar:actualizar,datos:function(){return D;},semana:semana,sugeridos:sugeridos};
 })();
 </script>
