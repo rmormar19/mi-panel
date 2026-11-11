@@ -374,6 +374,10 @@ input,textarea,select,input.in,textarea.wab,.minin{font-size:16px!important}
 @keyframes spTrazo{to{stroke-dashoffset:0}}
 @keyframes spSube{from{opacity:.001;transform:translateY(14px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.splash{display:none}}
+/* 11 nov 2026 · ficha: el día de la semana se abre con su rutina */
+.dsem>summary{list-style:none;cursor:pointer}.dsem>summary::-webkit-details-marker{display:none}
+.dsem>summary .fl{transition:transform .2s}.dsem[open]>summary .fl{transform:rotate(180deg)}
+.dsem[open]>summary{border-bottom-color:transparent}.dsr{padding:0 0 12px;border-bottom:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -562,10 +566,11 @@ V.c=function(id,tab){var c=porId(id);if(!c)return cab('No encontrado')+'<div cla
   '<div><span>Cumplimiento</span><b class="num">'+(tp?Math.round(to/tp*100)+' %':'—')+'</b></div>'+
   '<div><span>'+cap1(MES[new Date().getMonth()])+'</span><b class="'+(pg?pg.pago?'ok':'wa':'')+'">'+(pg?pg.pago?'Pagó':'Debe':gymC?'Gimnasio':'—')+'</b></div>'+
   '<div title="'+esc(c.fase?(c.fase.f||'')+(c.fase.sem?' · semana '+c.fase.sem:'')+(c.fase.rir?' · '+c.fase.rir:''):'')+'"><span>Fase</span><b>'+esc(c.fase&&c.fase.f?String(c.fase.f).replace(/^ventana de /i,'').replace(/^./,function(x){return x.toUpperCase();}):'—')+'</b></div></div>';
- var T=[['semana','Semana'],['rutina','Rutina'],['dieta','Dieta'],['medidas','Medidas'],['datos','Datos'],['notas','Notas']];
+ if(tab==='rutina')tab='semana';if(tab==='notas')tab='datos';   /* links viejos a pestañas que ya no están */
+ var T=[['semana','Semana'],['dieta','Dieta'],['medidas','Medidas'],['datos','Datos']];
  s+='<div class="tabs" role="group" aria-label="Secciones de la ficha">'+T.map(function(t){return '<button type="button" data-tab="'+id+'|'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>';}).join('')+'</div>';
  var vj=function(x){return ausente(c)&&!tiene(x.d)&&x.e!=='li'&&!cardioSolo(x.d)&&enPauta(c,x.i)&&(!vh||+x.f<=+vh);};
- if(tab==='semana'){s+='<div class="card">'+sm.map(function(x){var h=horaDe(c,x.i);return '<div class="row"><span class="hr num" style="font-size:13px;color:var(--tx3);min-width:46px">'+D3[x.i]+' '+x.f.getDate()+'</span><span class="tx"><b'+(vj(x)?' class="bl"':'')+'>'+(tiene(x.d)?esc(gTxt(x.d.grupo)):x.e==='li'?'Libre':cardioSolo(x.d)?'Cardio por su cuenta':vj(x)?(c.estado.e==='viaje'?'De viaje':'En pausa'):'Descanso')+'</b><small>'+(vj(x)?'no cuenta como falta':'')+(cardioSolo(x.d)?esc(x.d.cardio.filter(function(z){return z&&z.tipo;}).map(cardioTx).join(' · ')):'')+(tiene(x.d)?(h?h+' h · ':'')+(x.d.ejercicios||[]).filter(function(e){return e.nombre;}).length+' ejercicios'+(x.d.esfuerzo?' · esfuerzo '+esc(x.d.esfuerzo):''):'')+'</small></span>'+(vj(x)?'<span class="chip vj">'+(c.estado.e==='viaje'?'Viaje':'Pausa')+'</span>':x.e!=='de'?'<span class="chip '+ESCH[x.e]+'">'+(x.e==='li'&&!tiene(x.d)?'Libre':ESTX[x.e])+'</span>':'')+'</div>';}).join('')+'</div>';
+ if(tab==='semana'){s+='<div class="card">'+sm.map(function(x){var h=horaDe(c,x.i),fila='<span class="hr num" style="font-size:13px;color:var(--tx3);min-width:46px">'+D3[x.i]+' '+x.f.getDate()+'</span><span class="tx"><b'+(vj(x)?' class="bl"':'')+'>'+(tiene(x.d)?esc(gTxt(x.d.grupo)):x.e==='li'?'Libre':cardioSolo(x.d)?'Cardio por su cuenta':vj(x)?(c.estado.e==='viaje'?'De viaje':'En pausa'):'Descanso')+'</b><small>'+(vj(x)?'no cuenta como falta':'')+(cardioSolo(x.d)?esc(x.d.cardio.filter(function(z){return z&&z.tipo;}).map(cardioTx).join(' · ')):'')+(tiene(x.d)?(h?h+' h · ':'')+(x.d.ejercicios||[]).filter(function(e){return e.nombre;}).length+' ejercicios'+(x.d.esfuerzo?' · esfuerzo '+esc(x.d.esfuerzo):''):'')+'</small></span>'+(vj(x)?'<span class="chip vj">'+(c.estado.e==='viaje'?'Viaje':'Pausa')+'</span>':x.e!=='de'?'<span class="chip '+ESCH[x.e]+'">'+(x.e==='li'&&!tiene(x.d)?'Libre':ESTX[x.e])+'</span>':'');return filaDia(c,id,x,fila);}).join('')+'</div>';
   s+='<div class="sh"><h2>Últimas semanas</h2><span>hechas / planificadas</span></div><div class="card">'+barrasSem(W)+'</div>';}
  if(tab==='rutina')s+=rutinaHTML(c);
  if(tab==='dieta')s+=dietaHTML(c);
@@ -575,8 +580,13 @@ V.c=function(id,tab){var c=porId(id);if(!c)return cab('No encontrado')+'<div cla
    '<span>Horario</span><b>'+esc(d.horario||'—')+'</b><span>Días</span><b>'+esc((d.diasPauta||[]).slice().sort(function(a,b){return ((iDia(a)+6)%7)-((iDia(b)+6)%7);}).map(function(x){return D3[iDia(x)]||x;}).join(' · ')||'—')+'</b>'+
    '<span>Lesiones o enfermedades</span><b class="'+(d.enfermedades?'wa':'')+'">'+esc(d.enfermedades||'Ninguna')+'</b><span>Alergias</span><b>'+esc(d.alergias||'Ninguna')+'</b>'+
    '<span>Medicación</span><b>'+(d.medicacion?'Sí (ver en el Monitor)':'No')+'</b><span>Empezó</span><b>'+(c.inicio?esc(c.inicio.split('-').reverse().join('/')):'—')+'</b></div></div>';}
- if(tab==='notas')s+='<div class="card">'+((c.observaciones||[]).slice().reverse().slice(0,20).map(function(o){return '<div class="nota"><small>'+esc(fechaObs(c,o))+'</small>'+esc(o.texto)+'</div>';}).join('')||'<div class="vacio">Sin observaciones.</div>')+'</div>';
+ if(tab==='datos')s+='<div class="sh"><h2>Notas</h2>'+((c.observaciones||[]).length?'<span>'+(c.observaciones||[]).length+'</span>':'')+'</div><div class="card">'+((c.observaciones||[]).slice().reverse().slice(0,20).map(function(o){return '<div class="nota"><small>'+esc(fechaObs(c,o))+'</small>'+esc(o.texto)+'</div>';}).join('')||'<div class="vacio">Sin notas.</div>')+'</div>';
  return s;};
+/* un día de la semana en la ficha: si tiene rutina, al tocarlo se abre con sus ejercicios (queda abierto aunque se repinte) */
+function filaDia(c,id,x,fila){if(!tiene(x.d))return '<div class="row">'+fila+'</div>';var k=id+'|'+x.i,E=(x.d.ejercicios||[]).filter(function(e){return e&&e.nombre;}),Z=(x.d.cardio||[]).filter(function(z){return z&&z.tipo;});
+ return '<details class="dsem" data-ab="'+esc(k)+'"'+(U.semAb===k?' open':'')+'><summary class="row">'+fila+'<svg class="fl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>'+
+  '<div class="dsr">'+E.map(function(e){return ejHTML(e,x.e==='ok',c,x.d.dia);}).join('')+Z.map(function(z){return '<div class="ej"><b>Cardio · '+esc(cardioTx(z))+'</b><small>'+(z.estado==='hecho'?'hecho':'')+'</small></div>';}).join('')+(E.length||Z.length?'':'<div class="vacio">Sin ejercicios cargados.</div>')+'</div></details>';}
+document.addEventListener('toggle',function(e){var t=e.target;if(!t||!t.classList||!t.classList.contains('dsem'))return;if(t.open)U.semAb=t.getAttribute('data-ab');else if(U.semAb===t.getAttribute('data-ab'))U.semAb=null;},true);
 function barrasSem(W){if(!W.length)return '<div class="vacio">Sin semanas registradas.</div>';var mx=Math.max.apply(null,W.map(function(w){return w.plan;}).concat([1]));
  return '<div style="display:flex;gap:6px;align-items:flex-end;height:96px">'+W.map(function(w){var l=new Date(w.l);return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span class="num" style="font-size:11px;color:var(--tx3)">'+w.ok+'/'+w.plan+'</span><div style="width:100%;max-width:26px;height:'+(w.plan/mx*62+4)+'px;border-radius:7px;background:var(--surf3);display:flex;flex-direction:column-reverse;overflow:hidden">'+
    '<i style="display:block;height:'+(w.plan?w.ok/w.plan*100:0)+'%;background:'+(w.act?'var(--a1)':'var(--grn)')+'"></i><i style="display:block;height:'+(w.plan?w.fa/w.plan*100:0)+'%;background:var(--red)"></i></div><span style="font-size:10.5px;color:var(--tx3)">'+(w.act?'esta':dm(l))+'</span></div>';}).join('')+'</div>';}
