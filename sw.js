@@ -1,5 +1,5 @@
 /* Mi panel · service worker: la app abre sin internet. Los datos viven en el celular (localStorage), no acá. */
-const V = 'mipanel-202611111150';
+const V = 'mipanel-202611112115';
 const BASE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
   './fuentes/plex-400.woff2', './fuentes/plex-500.woff2', './fuentes/plex-600.woff2', './fuentes/manrope-700.woff2', './fuentes/manrope-800.woff2'];
 /* 11 nov 2026 · al instalar una versión nueva se piden los archivos al servidor, nunca a la copia del navegador */

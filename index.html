@@ -704,7 +704,7 @@ V.notas=function(){var T=[];CL().forEach(function(c){(c.observaciones||[]).forEa
 
 V.ajustes=function(){var kb=0;try{kb=Math.round((localStorage.getItem(K_DATOS)||'').length/1024);}catch(e){}
  return cab('Ajustes')+'<div class="card" style="margin-top:8px">'+
-  '<div class="sw"><span><b>Revisar al abrir</b><small>Al abrir la app pregunta si hay cambios. Si no hay, gasta casi nada; si hay, baja unos 25 KB.</small></span><button type="button" class="tog" data-act="abrir" aria-pressed="'+!!PREF.abrir+'" aria-label="Revisar al abrir"></button></div>'+
+  '<div class="sw"><span><b>Se actualiza solo</b><small>Al abrir la app, al volver a ella y cada minuto pregunta si hay cambios del Monitor o de los clientes. Si no hay, gasta casi nada; si hay, baja unos 25 KB.</small></span></div>'+
   '<div class="sw"><span><b>Modo claro</b><small>Igual que en el Monitor y la app de tus clientes.</small></span><button type="button" class="tog" data-act="tema" aria-pressed="'+document.documentElement.classList.contains('claro')+'" aria-label="Modo claro"></button></div>'+
   '<div class="sw"><span><b>Datos guardados</b><small>'+(D?(D.clientes||[]).length+' clientes · '+kb+' KB · actualizados '+hace(D.leido):'Nada todavía')+'</small></span></div></div>'+
   '<div style="margin-top:14px;display:grid;gap:10px"><button type="button" class="pri" data-act="sync">'+I.sync+'Actualizar ahora</button><button type="button" class="sec" data-act="salir" style="color:var(--redt)">Desconectar y borrar los datos del celular</button></div>'+
@@ -773,7 +773,9 @@ function marcarSerie(c,xs,e,n,sv){var iso=ymd(xs.f),z=seriesDe(e)[n-1]||{},cambi
   [nom1(c.nombre)+' · '+e.nombre,'Serie '+n+' hecha · '+(sv.peso||'—')+' × '+(sv.reps||'—')+(cambio?' (cambiada)':'')+(sv.rir!=null?' · RIR '+sv.rir:'')],serK(c.id,iso,e.nombre,n));
  /* la primera serie marca la sesión como hecha */
  var ke='est|'+c.id+'|'+iso;if(!buscaK(ke)&&xs.e!=='ok')encolar(c.id,{tipo:'sesion',dia:xs.d.dia,estado:'verde',ts:+xs.f+12*36e5,series:0,total:0},[nom1(c.nombre)+' · '+DS[xs.i].toLowerCase()+' '+dm(xs.f),'Sesión hecha'],ke);}
-function estLocal(cid,iso){var r=buscaK('est|'+cid+'|'+iso);if(!r)return null;var d=r.x.d;return {v:d.tipo==='libre'?'libre':d.tipo==='soloCardio'?'verde':d.estado,pend:r.pend,sc:d.tipo==='soloCardio'};}
+function estLocal(cid,iso){var r=buscaK('est|'+cid+'|'+iso);if(!r)return estApp(cid,iso);var d=r.x.d;return {v:d.tipo==='libre'?'libre':d.tipo==='soloCardio'?'verde':d.estado,pend:r.pend,sc:d.tipo==='soloCardio'};}
+/* 12 nov 2026 · lo que el cliente marcó en su app y el Monitor todavía no aplicó (lo manda el puente aparte) */
+function estApp(cid,iso){var L=(D&&D.app&&D.app[cid])||[],x=null;for(var i=0;i<L.length;i++)if(L[i].iso===iso)x=L[i];if(!x||!x.estado)return null;return {v:x.estado,pend:false,app:true};}
 function pagoLocal(nid,mes){var r=buscaK('pago|'+nid+'|'+mes);if(!r)return null;var d=r.x.d;return {fecha:d.fecha,medio:d.medio,monto:d.monto,origen:'celular',pend:r.pend};}
 var hoyISO=function(){return ymd(new Date());};
 /* lo enviado se sigue mostrando hasta que el Monitor lo aplica (o 7 días) */
@@ -1086,11 +1088,18 @@ async function bajar(conf,ver){var z=typeof DecompressionStream!=='undefined';
  var j=await r.json();if(!j.ok)throw new Error(j.error==='clave'?'La clave no es correcta.':j.error==='accion'?'Falta pegar el código nuevo del puente (acción «profe»).':(j.error||'Error del puente'));
  if(j.z)j=JSON.parse(await abrirZ(j.z));return j;}
 async function actualizar(silencio){if(U.leyendo||!CONF)return;if(!navigator.onLine){if(!silencio)toast('Sin conexión: seguís viendo los datos guardados');return;}
- U.leyendo=true;render();
+ U.leyendo=true;if(!silencio)render();var cambio=false;
  try{var j=await bajar(CONF,D&&D.v);if(j.igual){D.chequeado=new Date().toISOString();guarda(K_DATOS,D);if(!silencio)toast('Ya estaba todo al día');}
-  else{j.chequeado=j.leido;D=j;if(!guarda(K_DATOS,D))toast('No se pudo guardar en el celular');else if(!silencio)toast('Datos actualizados');limpiarEnviados();}}
+  else{j.chequeado=j.leido;D=j;cambio=true;if(!guarda(K_DATOS,D))toast('No se pudo guardar en el celular');else if(!silencio)toast('Datos actualizados');limpiarEnviados();}}
  catch(e){if(!silencio)toast(e.message&&!/fetch|network|load/i.test(e.message)?e.message:'No hay conexión con el puente');}
- U.leyendo=false;render();}
+ U.leyendo=false;if(!silencio)render();else renderSeguro(cambio);}
+/* 12 nov 2026 · se actualiza solo (pedido de Ricky: lo que se cambia en el Monitor o en la app del cliente tiene que aparecer
+   sin tocar nada): al abrir, al volver a la app, al recuperar internet y cada minuto mientras está a la vista. Si nada cambió,
+   el puente responde «igual» y casi no gasta datos. Sólo baja datos: lo que anotás acá se sigue mandando con Actualizar. */
+function ocupadoUI(){var ae=document.activeElement;return !!(U.hoja||(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)));}
+var renderPend=null;function renderSeguro(cambio){clearTimeout(renderPend);if(!ocupadoUI()){render();return;}if(cambio)renderPend=setTimeout(function(){renderSeguro(true);},2000);}
+function autoAct(){if(!CONF||!D||U.leyendo||document.visibilityState!=='visible'||!navigator.onLine)return;actualizar(true);}
+setInterval(autoAct,60000);document.addEventListener('visibilitychange',autoAct);window.addEventListener('online',autoAct);
 
 async function enviarYActualizar(){if(U.leyendo)return;if(!navigator.onLine){toast('No hay conexión. Tus cambios siguen guardados.');return;}
  if(navigator.connection&&navigator.connection.type==='cellular'){toast('Estás con datos móviles: conectate a un wifi');return;}
@@ -1224,14 +1233,14 @@ document.addEventListener('input',function(ev){if(ev.target.id==='q'){U.q=ev.tar
 /* ================= arranque ================= */
 if(/#k=/.test(location.hash)){U.cod=(location.hash.match(/#k=([\w-]+)/)||[])[1];if(standalone()||!/iphone|ipad|ipod/i.test(navigator.userAgent)){var cf0=decod(U.cod);history.replaceState(null,'',location.pathname+'#/conectar');if(cf0&&!CONF){render();conectar(cf0);}else render();}else render();}
 else render();
-if(CONF&&D&&PREF.abrir)actualizar(true);
+if(CONF&&D)actualizar(true);
 if('serviceWorker' in navigator){var swHabia=!!navigator.serviceWorker.controller,swRec=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHabia||swRec)return;swRec=true;location.reload();});
  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update();}).catch(function(){});});}
 if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(function(){});});
 /* sin zoom con dos dedos en iPhone (Safari ignora user-scalable) y sin zoom por doble toque */
 document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
 document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});
-window.MP={render:render,actualizar:actualizar,datos:function(){return D;},semana:semana,sugeridos:sugeridos};
+window.MP={render:render,actualizar:actualizar,datos:function(){return D;},semana:semana,sugeridos:sugeridos,hoja:function(h){if(h!==undefined){U.hoja=h;render();}return U.hoja;}};
 })();
 </script>
 </body>
