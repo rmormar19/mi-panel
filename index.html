@@ -398,6 +398,7 @@ input,textarea,select,input.in,textarea.wab,.minin{font-size:16px!important}
 .gtt .gmot{display:block;font-style:normal;margin-top:4px;padding-top:4px;border-top:1px solid var(--line2);color:var(--yel);white-space:normal;max-width:210px}.gtt b{display:block;font:800 17px var(--d)}.gtt span{display:block;color:var(--tx2)}
 .ghint{margin:6px 0 0;font-size:11.5px;color:var(--tx4);text-align:center}
 @media (prefers-reduced-motion:reduce){.spk circle{animation:none;transform:none}.gw .garea{animation:none;opacity:1}.gw .gdot2{animation:none;transform:none}}
+.ncli{margin:10px 0 4px}.bajab{margin-top:14px}.baja-c{display:grid;gap:4px;margin-top:14px}.baja-c small{color:var(--tx3);font-size:12.5px}.baja-c .sec{margin-top:8px}
 </style>
 </head>
 <body>
@@ -541,7 +542,7 @@ var V={};
 function cab(t,sub,atras){return '<div class="hd">'+(atras!==false?'<button type="button" class="ib" data-atras="1" aria-label="Volver">'+I.atr+'</button>':'')+'<div><h1>'+t+'</h1>'+(sub?'<p>'+sub+'</p>':'')+'</div></div>';}
 function lineaEstado(){if(!D)return '';var v=semVieja();
  return '<div class="estado'+(v||Date.now()-new Date(D.chequeado||D.leido)>2*864e5?' viejo':'')+'"><i></i><span>Datos de <b>'+hace(D.chequeado||D.leido)+'</b> · guardados en el celular</span><button type="button" data-act="sync">'+(U.leyendo?'Actualizando…':'Actualizar'+(COLA.length?' · '+COLA.length:''))+'</button></div>'+
-  (v?'<div class="aviso">Empezó una semana nueva y estos datos son de la anterior. Actualizá cuando tengas wifi.</div>':'');}
+  (v?'<div class="aviso">Empezó una semana nueva y estos datos son de la anterior. Se actualiza solo apenas haya internet.</div>':'');}
 function filaCli(c,sub,der,tab){return '<button type="button" class="row" data-go="c/'+esc(c.id)+(tab?'/'+tab:'')+'"><span class="ini" style="background:'+col(c.nombre)+'">'+esc(ini(c.nombre))+'</span><span class="tx"><b>'+esc(c.nombre)+'</b><small>'+sub+'</small></span>'+(der||'')+I.fl+'</button>';}
 function dots(c){return '<span class="dots" aria-hidden="true">'+semana(c).filter(function(x){return x.e!=='de'&&x.e!=='li';}).map(function(x){return '<i class="'+x.e+'"></i>';}).join('')+'</span>';}
 
@@ -572,6 +573,7 @@ V.clientes=function(){var L=CL(),q=N(U.q),F={act:function(c){return !ausente(c);
  var pagoDe=function(c){var x=(cb.L||[]).filter(function(z){return z.c&&z.c.id===c.id;})[0];if(!x)return '';return x.pago?'<span class="chip ok">Pagó</span>':x.cuota?'<span class="chip wa">Debe</span>':'';};
  return cab('Clientes',L.length+' clientes')+'<input class="buscar" type="search" id="q" placeholder="Buscar cliente" value="'+esc(U.q)+'" autocomplete="off" aria-label="Buscar cliente">'+
   '<div class="tabs" role="group" aria-label="Filtro">'+[['act','Activos'],['aus','De viaje o en pausa'],['todos','Todos']].map(function(f){return '<button type="button" data-filtro="'+f[0]+'" aria-pressed="'+(U.filtro===f[0])+'">'+f[1]+'</button>';}).join('')+'</div>'+
+  '<button type="button" class="sec ncli" data-act="nuevoCli">+ Nuevo cliente</button>'+altasPendHTML()+
   '<div class="card" id="lista">'+(vis.map(function(c){var e=c.estado&&ESTADO[c.estado.e],obj=(c.datos||{}).objetivos||'';return filaCli(c,(e&&c.estado.e!=='activo'?'<span class="'+e[1]+'">'+e[0]+'</span> · ':'')+esc(txtObj(obj)||'Sin objetivo cargado'),pagoDe(c)+dots(c));}).join('')||'<div class="vacio">Nadie con ese nombre.</div>')+'</div>'+(vis.length&&!q?'<div class="lg2 pt"><span><i class="ok"></i>Hecho</span><span><i class="fa"></i>Faltó</span><span><i class="sm"></i>Sin marcar</span><span><i class="hoy"></i>Hoy</span><span><i class="pl"></i>Planificado</span></div>':'');};
 
 V.c=function(id,tab){var c=porId(id);if(!c)return cab('No encontrado')+'<div class="vacio">Ese cliente ya no está en los datos guardados.</div>';
@@ -602,7 +604,16 @@ V.c=function(id,tab){var c=porId(id);if(!c)return cab('No encontrado')+'<div cla
    '<span>Lesiones o enfermedades</span><b class="'+(d.enfermedades?'wa':'')+'">'+esc(d.enfermedades||'Ninguna')+'</b><span>Alergias</span><b>'+esc(d.alergias||'Ninguna')+'</b>'+
    '<span>Medicación</span><b>'+(d.medicacion?'Sí (ver en el Monitor)':'No')+'</b><span>Empezó</span><b>'+(c.inicio?esc(c.inicio.split('-').reverse().join('/')):'—')+'</b></div></div>';}
  if(tab==='datos')s+='<div class="sh"><h2>Notas</h2>'+((c.observaciones||[]).length?'<span>'+(c.observaciones||[]).length+'</span>':'')+'</div><div class="card">'+((c.observaciones||[]).slice().reverse().slice(0,20).map(function(o){return '<div class="nota"><small>'+esc(fechaObs(c,o))+'</small>'+esc(o.texto)+'</div>';}).join('')||'<div class="vacio">Sin notas.</div>')+'</div>';
+ if(tab==='datos')s+=bajaHTML(c);
  return s;};
+/* 12 nov 2026 · altas y bajas desde el celular: van al Monitor (y de ahí a Mi negocio y a la app) al tocar Actualizar */
+function altasPend(){return COLA.concat(ENVI).filter(function(x){return x.d&&x.d.tipo==='altaCliente'&&!porId(x.cid);});}
+function altasPendHTML(){var A=altasPend();if(!A.length)return '';
+ return '<div class="sh"><h2>Por agregar</h2><span>'+A.length+'</span></div><div class="card">'+A.map(function(x){var pend=COLA.indexOf(x)>=0;
+  return '<div class="row"><span class="ini" style="background:'+col(x.d.nombre)+'">'+esc(ini(x.d.nombre))+'</span><span class="tx"><b>'+esc(x.d.nombre)+'</b><small>'+esc(cap1(x.d.modo==='particular'?'presencial':x.d.modo||''))+(x.d.horario?' · '+esc(x.d.horario):'')+' · '+(pend?'sin enviar':'enviado: aparece cuando el Monitor lo agregue')+'</small></span>'+(pend?'<button type="button" class="qx" data-quitar="'+x.uid+'" aria-label="Quitar">×</button>':'')+'</div>';}).join('')+'</div>';}
+function bajaHTML(c){var r=buscaK('baja|'+c.id);
+ if(r)return '<div class="card baja-c"><b>'+(r.pend?'Baja guardada en el celular':'Baja enviada')+'</b><small>'+(r.pend?'Se manda sola al Monitor, a Mi negocio y a su app en unos segundos.':'Sale de la lista cuando el Monitor la aplique.')+'</small>'+(r.pend?'<button type="button" class="sec" data-quitar="'+r.x.uid+'">Deshacer</button>':'')+'</div>';
+ return '<button type="button" class="sec pel bajab'+(U.bajaArm===c.id?' arma':'')+'" data-act="bajaCli" data-v="'+esc(c.id)+'">'+(U.bajaArm===c.id?'Tocá de nuevo para dar de baja a '+esc(nom1(c.nombre)):'Dar de baja')+'</button><p class="muted" style="font-size:12px;margin:6px 4px 0">Deja de verse en Mi panel, en el Monitor, en Mi negocio y en su app. Sus datos y pagos quedan guardados.</p>';}
 /* un día de la semana en la ficha: si tiene rutina, al tocarlo se abre con sus ejercicios (queda abierto aunque se repinte) */
 function filaDia(c,id,x,fila){if(!tiene(x.d))return '<div class="row">'+fila+'</div>';var k=id+'|'+x.i,E=(x.d.ejercicios||[]).filter(function(e){return e&&e.nombre;}),Z=(x.d.cardio||[]).filter(function(z){return z&&z.tipo;});
  return '<details class="dsem" data-ab="'+esc(k)+'"'+(U.semAb===k?' open':'')+'><summary class="row">'+fila+'<svg class="fl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>'+
@@ -725,13 +736,13 @@ V.conectar=function(){var cod=(location.hash.match(/#k=([\w-]+)/)||[])[1]||U.cod
   '<p id="err" class="no" style="font-size:13px;min-height:18px;margin:10px 0 6px" role="alert"></p><button type="button" class="pri" data-act="conectar">Conectar y bajar los datos</button></div>';};
 
 /* ================= cambios hechos en el celular =================
-   Se guardan acá. Salen SOLO cuando tocás Actualizar y confirmás que estás con wifi. */
+   Se guardan acá y se mandan solos a los pocos segundos, con wifi o con datos (12 nov 2026, pedido de Ricky). */
 var K_COLA='mp-cola', K_ENV='mp-enviados', K_TEL='mp-tel';
 var COLA=lee(K_COLA)||[], ENVI=lee(K_ENV)||[], TEL=lee(K_TEL)||{};
 var nuevoUid=function(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);};
-function encolar(cid,d,desc,k){if(k)COLA=COLA.filter(function(x){return x.k!==k;});COLA.push({uid:nuevoUid(),cid:cid,d:d,desc:desc,k:k||null,t:Date.now()});guarda(K_COLA,COLA);}
+function encolar(cid,d,desc,k){if(k)COLA=COLA.filter(function(x){return x.k!==k;});COLA.push({uid:nuevoUid(),cid:cid,d:d,desc:desc,k:k||null,t:Date.now()});guarda(K_COLA,COLA);programarEnvio();}
 function buscaK(k){var x=COLA.filter(function(z){return z.k===k;}).pop();if(x)return {x:x,pend:true};x=ENVI.filter(function(z){return z.k===k;}).pop();return x?{x:x,pend:false}:null;}
-/* 9 nov 2026 · series en vivo: cada serie se marca hecha con un toque y, si no pudo con el peso, se cambia peso/reps. Todo queda en el celular hasta Actualizar con wifi. */
+/* 9 nov 2026 · series en vivo: cada serie se marca hecha con un toque y, si no pudo con el peso, se cambia peso/reps. Queda en el celular y se manda solo a los pocos segundos. */
 /* 9 nov 2026 · editar la rutina desde el celular (agregar, cambiar o quitar ejercicios y series), sin internet.
    Se ve al instante acá; llega al Monitor con Actualizar. Las operaciones no se duplican si se repiten. */
 function opEj(R,d){var dd=R.filter(function(z){return iDia(z.dia)===iDia(d.dia);})[0];if(!dd)return false;dd.ejercicios=dd.ejercicios||[];
@@ -781,6 +792,8 @@ var hoyISO=function(){return ymd(new Date());};
 /* lo enviado se sigue mostrando hasta que el Monitor lo aplica (o 7 días) */
 function limpiarEnviados(){ENVI=ENVI.filter(function(x){if(Date.now()-(x.env||x.t)>7*864e5)return false;
   if(x.d.tipo==='ejercicio'){var cE=porId(x.cid);if(!cE)return false;return opEj(JSON.parse(JSON.stringify(cE.rutina||[])),x.d);}
+  if(x.d.tipo==='altaCliente')return !porId(x.cid)&&Date.now()-(x.env||x.t)<7*864e5;
+  if(x.d.tipo==='bajaCliente'){var cb2=porId(x.cid);return !!cb2&&!cb2.baja&&Date.now()-(x.env||x.t)<7*864e5;}
   if(x.d.tipo==='pago'){var n=NEG();return !(n&&n.pagos.some(function(p){return p.cliente===x.d.cliente&&p.mes===x.d.mes;}));}
   if(x.k&&x.k.indexOf('est|')===0){var c=porId(x.cid);if(!c)return false;var iso=x.k.split('|')[2],dd=(c.rutina||[]).filter(function(z){return iDia(z.dia)===iDia(x.d.dia);})[0];
    if(!dd||+lunDatos()!==+lunesCal(new Date(iso+'T12:00')))return true;var want=x.d.tipo==='libre'?'libre':x.d.estado;return !(want==='libre'?dd.libre:dd.estado===want);}
@@ -828,12 +841,13 @@ function abrirAj(cid,i,j){var c=porId(cid),x=c&&semana(c).filter(function(z){ret
  U.hoja={t:'aj',cid:cid,i:+i,iso:ymd(x.f),dia:x.d.dia,e:e,dp:0,dr:0,pt:null,ns:seriesDe(e).length,sg:sugeridos(c,e.nombre,null,enDia,8),otro:false,quitar:false};render();}
 
 /* ================= hojas (ventanas de abajo) ================= */
+function leerNuevoCli(H){var g=function(i){var e=$('#'+i);return e?e.value:null;},v;if((v=g('ncN'))!=null)H.n=v;if((v=g('ncC'))!=null)H.cuota=v;if((v=g('ncH'))!=null)H.hora=v;if((v=g('ncI'))!=null)H.ini=v;}
 function hojaHTML(){var h=U.hoja;if(!h)return '';var s='';
- if(h.t==='enviar'){var cel=navigator.connection&&navigator.connection.type==='cellular';
+ if(h.t==='enviar'){
   s='<h3>Actualizar</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">Envía tus cambios al Monitor y a Mi negocio, y baja los datos nuevos.</p><div class="card avl" style="background:var(--surf2)">'+
    COLA.map(function(x){return '<div class="av1"><i class="bl"></i><span><b>'+esc(x.desc[0])+'</b><small>'+esc(x.desc[1]||'')+'</small></span><button type="button" class="qx" data-quitar="'+x.uid+'" aria-label="Quitar">×</button></div>';}).join('')+'</div>'+
-   (cel?'<div class="wifi no2">'+I.wifi+'<span><b>Estás con datos móviles</b><small>Conectate a un wifi para enviar. Tus cambios siguen guardados.</small></span></div>':'<div class="wifi">'+I.wifi+'<span><b>¿Estás conectado a wifi?</b><small>Hasta que no toques «Sí», no se usa internet.</small></span></div>')+
-   '<button type="button" class="pri" style="margin-top:12px" data-act="enviar"'+(cel?' disabled':'')+'>Sí, estoy con wifi · enviar y actualizar</button><button type="button" class="sec" style="margin-top:8px" data-act="cerrar">Ahora no</button>';}
+   '<div class="wifi">'+I.wifi+'<span><b>Se mandan solos</b><small>Con wifi o con datos, apenas haya internet. Gasta menos de 1 KB por cambio.</small></span></div>'+
+   '<button type="button" class="pri" style="margin-top:12px" data-act="enviar">Enviar ahora</button><button type="button" class="sec" style="margin-top:8px" data-act="cerrar">Cerrar</button>';}
  if(h.t==='anotar'){var c=porId(h.cid),e=h.e;
   s='<h3>'+esc(e.nombre)+'</h3><p class="muted" style="margin:2px 0 10px;font-size:13px">'+esc(nom1(c.nombre))+' · '+esc(h.dia)+' · '+seriesDe(e).length+' series</p>'+
    '<label class="l">Serie</label><div class="qn">'+seriesDe(e).map(function(z,j){var L=serLocal(h.cid,h.iso,e.nombre,j+1),v=L?L.s:z;return '<button type="button" class="'+(L?'hq':'')+'" data-h="n|'+(j+1)+'" aria-pressed="'+(h.n===j+1)+'">'+(L?'✓ ':'')+(j+1)+' · '+esc(v.peso||'—')+' × '+esc(v.reps||'—')+'</button>';}).join('')+'</div>'+
@@ -861,7 +875,17 @@ function hojaHTML(){var h=U.hoja;if(!h)return '';var s='';
     '<button type="button" data-h="otro|1" aria-pressed="'+h.otro+'">Otro…</button></div>'+
    (h.otro?'<div class="edc"><input id="hej" class="in" list="ejlist" autocomplete="off" placeholder="Nombre del ejercicio nuevo" value="'+esc(h.nn||'')+'"><input id="hejp" class="in" placeholder="Peso (opcional)" value="">'+listaEj()+'<button type="button" class="pri" data-act="g-camb">Cambiar</button></div>':'')+
    '<div class="aj2"><button type="button" class="sec" data-act="aj-nota">RIR o nota</button><button type="button" class="sec pel'+(h.quitar?' arma':'')+'" data-act="ej-quit">'+(h.quitar?'Tocá de nuevo':'Quitar ejercicio')+'</button></div>'+
-   '<p class="muted" style="font-size:12px;text-align:center;margin:10px 0 0">Queda en el celular y llega al Monitor cuando toques Actualizar con wifi</p>';}
+   '<p class="muted" style="font-size:12px;text-align:center;margin:10px 0 0">Se manda solo al Monitor en unos segundos</p>';}
+ if(h.t==='nuevoCli'){var DSn=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  s='<h3>Nuevo cliente</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">Se agrega solo al Monitor, a Mi negocio y a su app en unos segundos. La rutina se la armás en el Monitor.</p>'+
+   '<label class="l" for="ncN">Nombre y apellido</label><input id="ncN" class="in" autocomplete="off" placeholder="Ej.: Lucía Pérez" value="'+esc(h.n||'')+'">'+
+   '<label class="l">Modalidad</label><div class="qn">'+[['particular','Presencial'],['online','Online'],['gimnasio','Gimnasio']].map(function(o){return '<button type="button" data-h="nt|'+o[0]+'" aria-pressed="'+(h.tipo===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>'+
+   (h.tipo!=='gimnasio'?'<label class="l" for="ncC">Cuota por mes (US$)</label><input id="ncC" class="in num" inputmode="numeric" placeholder="Ej.: 150" value="'+esc(h.cuota||'')+'">':'')+
+   (h.tipo!=='online'?'<label class="l">Días</label><div class="qn">'+DSn.map(function(d){return '<button type="button" data-h="nd|'+d+'" aria-pressed="'+(h.dias.indexOf(d)>=0)+'">'+d+'</button>';}).join('')+'</div>'+
+    '<label class="l" for="ncH">Hora</label><input id="ncH" class="in num" inputmode="numeric" placeholder="Ej.: 15" value="'+esc(h.hora||'')+'">':'')+
+   '<label class="l" for="ncI">Empieza</label><input id="ncI" class="in" type="date" value="'+esc(h.ini||hoyISO())+'">'+
+   (h.err?'<p class="wa" style="margin:10px 2px 0;font-size:13px">'+esc(h.err)+'</p>':'')+
+   '<button type="button" class="pri" style="margin-top:14px" data-act="g-nuevoCli">Guardar en el celular</button>';}
  if(h.t==='agregar'){var cA2=porId(h.cid);
   s='<h3>Agregar ejercicio</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">'+esc(nom1(cA2.nombre))+' · '+esc(h.dia)+'. Va al final de la sesión.</p>'+
    (h.sg&&h.sg.length?'<div class="qn sug" style="margin-bottom:10px">'+h.sg.map(function(n,k){return '<button type="button" data-h="asug|'+k+'" aria-pressed="'+(N(n)===N(h.nn||''))+'">'+esc(acentos(n))+'</button>';}).join('')+'</div>':'')+
@@ -869,19 +893,19 @@ function hojaHTML(){var h=U.hoja;if(!h)return '';var s='';
    '<div class="stp"><div><span class="l">Series</span><div class="stc"><button type="button" data-h="as|-1" aria-label="Una serie menos">−</button><b>'+h.ns+'</b><button type="button" data-h="as|1" aria-label="Una serie más">+</button></div></div>'+
    '<div><span class="l">Reps</span><div class="stc"><button type="button" data-h="ar|-1" aria-label="Una repetición menos">−</button><b>'+h.nr+'</b><button type="button" data-h="ar|1" aria-label="Una repetición más">+</button></div></div></div>'+
    '<label class="l" for="hejpn">Peso</label><input id="hejpn" class="in" placeholder="Ej.: 10 kg o 4 placas" value="'+esc(h.np||'')+'">'+
-   '<button type="button" class="pri" style="margin-top:12px" data-act="g-agr">Agregar</button><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Queda en el celular y llega al Monitor cuando toques Actualizar con wifi</p>';}
+   '<button type="button" class="pri" style="margin-top:12px" data-act="g-agr">Agregar</button><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se manda solo al Monitor en unos segundos</p>';}
  if(h.t==='cardio'){var cC=porId(h.cid),sC=semana(cC),xC=sC.filter(function(z){return z.i===h.i;})[0],frz=(xC.d&&(xC.d.ejercicios||[]).filter(function(e){return e&&e.nombre;}).length)?xC.d:null;
   s='<h3>Solo cardio</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">'+esc(nom1(cC.nombre))+' · '+DS[h.i].toLowerCase()+' '+dm(xC.f)+'. Hizo cardio en vez de fuerza: el día cuenta como entrenado.</p>'+
    '<label class="l">Cardio</label><div class="qn">'+[['caminata','Caminata'],['bici','Bici'],['eliptica','Elíptica'],['trote','Trote'],['correr','Correr'],['remo','Remo']].map(function(o){return '<button type="button" data-h="ct|'+o[0]+'" aria-pressed="'+(h.ct===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>'+
    '<label class="l">Minutos</label><div class="qn">'+['20','30','45','60'].map(function(m){return '<button type="button" data-h="mn|'+m+'" aria-pressed="'+(h.mn===m)+'">'+m+'</button>';}).join('')+'<input id="hmin" class="minin num" inputmode="numeric" placeholder="Otro" value="'+(['20','30','45','60'].indexOf(h.mn)<0?esc(h.mn||''):'')+'"></div>'+
    (frz?'<label class="l">La fuerza de '+esc(frz.grupo||'ese día')+' pasa al</label><div class="qn">'+sC.filter(function(z){return +z.f>+xC.f&&z.e!=='ok';}).map(function(z){return '<button type="button" data-h="ca|'+z.i+'" aria-pressed="'+(h.ca===z.i)+'">'+D3[z.i]+' '+z.f.getDate()+(tiene(z.d)?' · se suma':'')+'</button>';}).join('')+'<button type="button" data-h="ca|-1" aria-pressed="'+(h.ca===-1)+'">No pasarla</button></div>':'')+
-   '<button type="button" class="pri" style="margin-top:12px" data-act="g-cardio">Guardar en el celular</button>'+(h.quitar?'<button type="button" class="sec" style="margin-top:8px" data-act="q-cardio">Quitar solo cardio</button>':'')+'<p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Llega al Monitor y a la app cuando toques Actualizar con wifi</p>';}
+   '<button type="button" class="pri" style="margin-top:12px" data-act="g-cardio">Guardar en el celular</button>'+(h.quitar?'<button type="button" class="sec" style="margin-top:8px" data-act="q-cardio">Quitar solo cardio</button>':'')+'<p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se manda solo al Monitor y a la app en unos segundos</p>';}
  if(h.t==='pago'){var r=(NEG()||{}).cot,cp=r&&r.compra;
   s='<h3>Marcar pago</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">'+esc(h.nombre)+' · '+MES[+h.mes.slice(5)-1]+'</p>'+
    '<div class="mon"><span>Monto en dólares</span><input id="hmonto" class="in num" inputmode="decimal" value="'+esc(h.monto)+'" style="font:800 24px var(--d);padding:6px 0;border:0;background:none">'+(cp?'<small>≈ $U '+nf.format(Math.round((+h.monto||0)*cp))+' al BROU</small>':'')+'</div>'+
    '<label class="l">Medio</label><div class="qn">'+['Transferencia','Efectivo','Mercado Pago'].map(function(m){return '<button type="button" data-h="medio|'+m+'" aria-pressed="'+(h.medio===m)+'">'+m+'</button>';}).join('')+'</div>'+
    '<label class="l">Fecha</label><div class="qn">'+[[0,'Hoy '+dm(new Date())],[1,'Ayer']].map(function(f){return '<button type="button" data-h="dia|'+f[0]+'" aria-pressed="'+(h.dia===f[0])+'">'+f[1]+'</button>';}).join('')+'</div>'+
-   '<button type="button" class="pri" style="margin-top:16px" data-act="g-pago">Marcar cobrado</button><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se guarda en el celular y llega a Mi negocio cuando toques Actualizar con wifi</p>';}
+   '<button type="button" class="pri" style="margin-top:16px" data-act="g-pago">Marcar cobrado</button><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se manda solo a Mi negocio en unos segundos</p>';}
  if(h.t==='wa'){var c2=porId(h.cid);
   s='<h3>Enviar por WhatsApp</h3><div class="qn" style="margin:10px 0 12px">'+[['ses','Rutina de '+(proxSesion(c2)?DS[proxSesion(c2).i].toLowerCase():'hoy')],['sem','Resumen de la semana']].map(function(o){return '<button type="button" data-h="wt|'+o[0]+'" aria-pressed="'+(h.wt===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>'+
    '<textarea id="watxt" class="wab" style="min-height:220px">'+esc(h.wt==='sem'?textoSemana(c2):textoRutina(c2))+'</textarea>'+
@@ -906,7 +930,7 @@ function textoSemana(c){var sm=semana(c).filter(function(x){return x.e!=='de'&&x
 /* ================= Modo turno ================= */
 V.turno=function(){var dow=new Date().getDay(),L=semVieja()?[]:sesionesDia(dow),hs=[];L.forEach(function(x){var k=horaK(x);if(hs.indexOf(k)<0)hs.push(k);});
  var s=cab('Turno',DS[dow]+' '+dm(new Date())+' · '+L.length+' sesiones hoy',false);
- if(semVieja())return s+'<div class="aviso">Empezó una semana nueva y estos datos son de la anterior. Actualizá con wifi para ver el turno.</div>';
+ if(semVieja())return s+'<div class="aviso">Empezó una semana nueva y estos datos son de la anterior. Se actualiza solo apenas haya internet.</div>';
  if(!L.length)return s+'<div class="card"><div class="vacio">Hoy nadie tiene sesión.</div></div>';
  /* 10 nov 2026 · uno a la vez: arriba todos los de hoy por hora; abajo sólo el que elegiste */
  var O=[];hs.forEach(function(h){L.forEach(function(x){if(horaK(x)===h)O.push(x);});});
@@ -1007,7 +1031,7 @@ function gruposMP(c,R,lunR){var RG=c.regionesEj||{},act=lunR==null,P={},H={},Fu=
 var yG=function(a){return a.length>1?a.slice(0,-1).join(', ')+' y '+a[a.length-1]:(a[0]||'');};
 /* 8 nov 2026 · avisos agrupados por cliente y ordenados: faltas, sin marcar, cobros, medidas y estados */
 function avisos(){var G={no:[],sm:[],cob:[],med:[],est:[],env:[]},L=CL(),diasTx=function(a){return yG(a.map(function(x){return DS[x].toLowerCase();}));};
- if(COLA.length)G.env.push({t:COLA.length+' cambio'+(COLA.length===1?'':'s')+' sin enviar',s:'Tocá Actualizar cuando estés con wifi',go:'sync'});
+ if(COLA.length)G.env.push({t:COLA.length+' cambio'+(COLA.length===1?'':'s')+' sin enviar',s:'Se mandan solos apenas haya internet · tocá para mandarlos ya',go:'sync'});
  L.forEach(function(c){var sm=semana(c),fa=sm.filter(function(x){return x.e==='fa'&&!x.local;}).map(function(x){return x.i;}),gr=!semVieja()&&!ausente(c)?gruposMP(c).sinDia:[],p=[];
   if(fa.length)p.push(fa.length>1?'faltó '+fa.length+' veces: '+yG(fa.map(function(x){return D3[x].toLowerCase();})):'faltó el '+DS[fa[0]].toLowerCase());
   if(gr.length)p.push('le falta '+yG(gr).toLowerCase()+(fa.length?'':' y no tiene otro día pautado'));
@@ -1059,7 +1083,7 @@ V.c=function(id,tab){var s=Vc0(id,tab),c=porId(id);if(!c)return s;
  if(hx)hoyC='<div class="card hoyc"><div class="ch"><b>Hoy · '+DS[hx.i].toLowerCase()+'</b><span>'+esc(gTxt(hx.d.grupo))+(horaDe(c,hx.i)?' · '+horaDe(c,hx.i)+' h':'')+'</span></div><div class="seg3">'+
   [['verde','Hecho','ok'],['rojo','Faltó','fa'],['libre','No viene','li']].map(function(o){return '<button type="button" data-est="'+esc(id)+'|'+hx.i+'|'+o[0]+'" aria-pressed="'+(hx.e===o[2])+'" class="'+o[2]+'">'+(hx.e===o[2]?'✓ ':'')+o[1]+'</button>';}).join('')+'</div>'+
   (!c.regionesEj?'':'<button type="button" class="scb'+(hx.local&&hx.local.sc||hx.d.soloCardio?' on':'')+'" data-sc="'+esc(id)+'|'+hx.i+'">'+(hx.local&&hx.local.sc||hx.d.soloCardio?'✓ ':'')+'🏃 Hizo solo cardio</button>')+
-  (hx.local&&hx.local.pend?'<p class="muted" style="font-size:12.5px;margin:8px 0 0">Guardado en el celular · pasa al Monitor cuando actualices con wifi.</p>':'')+'</div>';
+  (hx.local&&hx.local.pend?'<p class="muted" style="font-size:12.5px;margin:8px 0 0">Guardado en el celular · se manda solo al Monitor en unos segundos.</p>':'')+'</div>';
  var i=s.indexOf('<div class="strip"');if(i<0)return s;var j=s.indexOf('<div class="tabs"',i);return s.slice(0,i)+acc+s.slice(i,j)+hoyC+s.slice(j);};
 
 
@@ -1098,11 +1122,20 @@ async function actualizar(silencio){if(U.leyendo||!CONF)return;if(!navigator.onL
    el puente responde «igual» y casi no gasta datos. Sólo baja datos: lo que anotás acá se sigue mandando con Actualizar. */
 function ocupadoUI(){var ae=document.activeElement;return !!(U.hoja||(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)));}
 var renderPend=null;function renderSeguro(cambio){clearTimeout(renderPend);if(!ocupadoUI()){render();return;}if(cambio)renderPend=setTimeout(function(){renderSeguro(true);},2000);}
-function autoAct(){if(!CONF||!D||U.leyendo||document.visibilityState!=='visible'||!navigator.onLine)return;actualizar(true);}
+function autoAct(){if(!CONF||!D||U.leyendo||U.enviando||document.visibilityState!=='visible'||!navigator.onLine)return;if(COLA.length)enviarSolo();else actualizar(true);}
+/* 12 nov 2026 · lo que anotás se manda solo (pedido de Ricky: «que se mande solo aunque sea con datos»): 8 s después del último
+   cambio (así «Deshacer» sigue andando), y si no había internet, en la próxima vuelta del minuto o apenas vuelva la conexión.
+   Si falla, queda guardado en el celular y se reintenta; nunca se pierde nada. */
+var envT=null;function programarEnvio(ms){clearTimeout(envT);envT=setTimeout(enviarSolo,ms||8000);}
+async function enviarSolo(){if(!CONF||!COLA.length||U.leyendo||U.enviando||!navigator.onLine)return;if(U.deshacer){programarEnvio(3000);return;}
+ U.enviando=true;var lote=COLA.slice(0,200),bien=false;
+ try{var r=await fetch(CONF.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({profe:1,clave:CONF.clave,items:lote.map(function(x){return {uid:x.uid,cid:x.cid,d:x.d};})})});
+  var j=await r.json();if(j&&j.ok){var ok={};(j.uids||[]).forEach(function(u){ok[u]=1;});ENVI=ENVI.concat(COLA.filter(function(x){return ok[x.uid];}).map(function(x){return Object.assign({},x,{env:Date.now()});}));COLA=COLA.filter(function(x){return !ok[x.uid];});guarda(K_COLA,COLA);guarda(K_ENV,ENVI);bien=true;}}
+ catch(e){}
+ U.enviando=false;if(bien){await actualizar(true);limpiarEnviados();renderSeguro(true);if(COLA.length)programarEnvio(5000);}}
 setInterval(autoAct,60000);document.addEventListener('visibilitychange',autoAct);window.addEventListener('online',autoAct);
 
-async function enviarYActualizar(){if(U.leyendo)return;if(!navigator.onLine){toast('No hay conexión. Tus cambios siguen guardados.');return;}
- if(navigator.connection&&navigator.connection.type==='cellular'){toast('Estás con datos móviles: conectate a un wifi');return;}
+async function enviarYActualizar(){if(U.leyendo||U.enviando)return;if(!navigator.onLine){toast('No hay conexión. Tus cambios siguen guardados y se mandan solos cuando vuelva.');return;}clearTimeout(envT);
  U.leyendo=true;render();var lote=COLA.slice(0,200);
  try{var r=await fetch(CONF.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({profe:1,clave:CONF.clave,items:lote.map(function(x){return {uid:x.uid,cid:x.cid,d:x.d};})})});
   var j=await r.json();if(!j.ok)throw new Error(j.error==='clave'?'La clave no es correcta.':(j.error||'Error del puente'));
@@ -1154,6 +1187,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
    if(ph[0]==='sug'){var nS2=H.sg[+ph[1]],cS3=porId(H.cid);if(!nS2)return;var n1=COLA.length;
     editarEj(H.cid,H.i,H.dia,'reemplazar',H.e.nombre,{nuevo:{nombre:nS2,peso:pesoPara(cS3,H.e,nS2)}});U.hoja=null;render();
     toast(H.e.nombre+' → '+nS2,COLA.slice(n1).map(function(q){return q.uid;}));return;}}
+  if(H.t==='nuevoCli'){leerNuevoCli(H);if(ph[0]==='nt')H.tipo=ph[1];if(ph[0]==='nd'){var iD=H.dias.indexOf(ph[1]);if(iD>=0)H.dias.splice(iD,1);else H.dias.push(ph[1]);}H.err='';}
   if(H.t==='agregar'&&ph[0]==='asug'){var nA2=H.sg[+ph[1]],uA=nA2&&ultimoDe(porId(H.cid),nA2);if(nA2){H.nn=nA2;H.np=uA&&uA.peso?uA.peso:'';var rA=uA&&parseInt(uA.reps,10);if(rA>0)H.nr=rA;}}
   if(ph[0]==='ct')H.ct=ph[1];if(ph[0]==='mn'){H.mn=ph[1];var mi=$('#hmin');if(mi)mi.value='';}if(ph[0]==='ca')H.ca=+ph[1];if(ph[0]==='medio')H.medio=ph[1];if(ph[0]==='dia')H.dia=+ph[1];if(ph[0]==='wt')H.wt=ph[1];render();return;}
  if(d.pago){var Cp=cobros(),xp=Cp.L.filter(function(z){return z.id===d.pago;})[0];if(!xp)return;U.hoja={t:'pago',nid:xp.id,pid:(xp.c&&xp.c.id)||null,nombre:xp.nombre,mes:Cp.mes,monto:String(xp.cuota||''),medio:'Transferencia',dia:0};render();return;}
@@ -1164,6 +1198,17 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
   encolar(x.c.id,{tipo:'sesion',dia:x.s.d.dia,estado:'verde',ts:+x.s.f+12*36e5,series:0,total:0},[nom1(x.c.nombre)+' · '+DS[x.s.i].toLowerCase()+' '+dm(x.s.f),'Sesión hecha'],'est|'+x.c.id+'|'+isoT);nT++;});
   render();toast(nT+' sesiones marcadas · guardado en el celular');return;}
  if(a==='cerrar'){U.hoja=null;render();return;}
+ if(a==='nuevoCli'){U.hoja={t:'nuevoCli',n:'',tipo:'particular',cuota:'',dias:[],hora:'',ini:hoyISO(),err:''};render();setTimeout(function(){var f=$('#ncN');if(f)f.focus();},50);return;}
+ if(a==='g-nuevoCli'){var Hn2=U.hoja;leerNuevoCli(Hn2);var nmN=Hn2.n.replace(/\s+/g,' ').trim(),hrN=parseInt(Hn2.hora,10),cuN=Math.round(+String(Hn2.cuota).replace(',','.'))||null;
+  var ya=CL().concat((D&&D.clientes)||[]).some(function(c){return N(c.nombre).replace(/[^a-z0-9]/g,'')===N(nmN).replace(/[^a-z0-9]/g,'');})||altasPend().some(function(x){return N(x.d.nombre)===N(nmN);});
+  Hn2.err=nmN.length<2?'Escribí el nombre.':ya?'Ya hay un cliente con ese nombre.':Hn2.tipo!=='online'&&Hn2.hora&&!(hrN>=5&&hrN<=22)?'Revisá la hora: un número entre 5 y 22.':'';
+  if(Hn2.err){render();return;}
+  var DO=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],dsN=Hn2.tipo==='online'?[]:DO.filter(function(d){return Hn2.dias.indexOf(d)>=0;}),horN=Hn2.tipo==='online'?null:dsN.length&&hrN?dsN.map(function(d){return d+' '+hrN+':00';}).join(', '):hrN?hrN+'hs':null;
+  var pid='nuevo-'+Date.now();
+  encolar(pid,{tipo:'altaCliente',panelId:pid,nombre:nmN,modo:Hn2.tipo,cuota:Hn2.tipo==='gimnasio'?null:cuN,dias:dsN,horario:horN,inicio:Hn2.ini||hoyISO()},[nmN,'Cliente nuevo · '+(Hn2.tipo==='particular'?'presencial':Hn2.tipo)+(cuN&&Hn2.tipo!=='gimnasio'?' · '+usd(cuN):'')],'alta|'+pid);
+  U.hoja=null;render();toast('Guardado en el celular');return;}
+ if(a==='bajaCli'){var idB=d.v,cB=porId(idB);if(!cB)return;if(U.bajaArm!==idB){U.bajaArm=idB;render();setTimeout(function(){if(U.bajaArm===idB){U.bajaArm=null;render();}},3500);return;}
+  U.bajaArm=null;encolar(idB,{tipo:'bajaCliente',baja:true,nombre:cB.nombre,fecha:hoyISO()},[nom1(cB.nombre),'Dar de baja'],'baja|'+idB);render();toast('Baja guardada en el celular');return;}
  if(a==='deshacer'){var du=U.deshacer||[];if(!du.length)return;var dn=COLA.length;COLA=COLA.filter(function(q){return du.indexOf(q.uid)<0;});guarda(K_COLA,COLA);U.deshacer=null;render();
   if(dn===COLA.length)toast('Ya se envió: cambialo de nuevo desde el ejercicio');else toast('Deshecho');return;}
  if(a==='aj-nota'){var Hn=U.hoja,cN=porId(Hn.cid),xN=cN&&semana(cN).filter(function(z){return z.i===Hn.i;})[0];if(!xN)return;
@@ -1213,7 +1258,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
   if(!hizo){toast('Elegí un RIR o escribí una nota');return;}U.hoja=null;render();toast('Guardado en el celular');return;}
  if(a==='g-pago'){var Hp=U.hoja,mt=parseFloat(String((($('#hmonto')||{}).value)||'').replace(',','.'));if(!(mt>0)){toast('Revisá el monto');return;}var fp=new Date();fp.setDate(fp.getDate()-Hp.dia);
   encolar(Hp.pid||null,{tipo:'pago',cliente:Hp.nid,mes:Hp.mes,monto:mt,fecha:ymd(fp),medio:Hp.medio},[nom1(Hp.nombre)+' · cuota de '+MES[+Hp.mes.slice(5)-1],usd(mt)+' · '+Hp.medio.toLowerCase()],'pago|'+Hp.nid+'|'+Hp.mes);U.hoja=null;render();toast('Guardado en el celular');return;}
- if(a==='sync'){if(COLA.length){U.hoja={t:'enviar'};render();return;}return actualizar(false);}
+ if(a==='sync'){if(COLA.length)return enviarYActualizar();return actualizar(false);}
  if(a==='abrir'){PREF.abrir=!PREF.abrir;guarda(K_PREF,PREF);render();return;}
  if(a==='tema'){var cl=!document.documentElement.classList.contains('claro');document.documentElement.classList.toggle('claro',cl);try{localStorage.setItem('mp-tema',cl?'claro':'oscuro');}catch(e){}
   var m=document.querySelector('meta[name=theme-color]');if(m)m.content=cl?'#f3f5f9':'#0b1524';render();return;}
@@ -1227,7 +1272,7 @@ async function conectar(cf){var E=$('#err'),B=document.querySelector('[data-act=
  if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(cf.url)&&!/^http:\/\/localhost/.test(cf.url)){if(E)E.textContent='La URL del puente tiene que terminar en /exec.';return;}
  if(E)E.textContent='';if(B){B.disabled=true;B.textContent='Bajando tus datos…';}
  try{var j=await bajar(cf,null);j.chequeado=j.leido;CONF=cf;D=j;guarda(K_CONF,CONF);guarda(K_DATOS,D);history.replaceState(null,'','#/');render();toast('Listo: tus datos ya están en el celular');}
- catch(e){if(E)E.textContent=e.message&&!/fetch|network|load/i.test(e.message)?e.message:'No hay conexión con el puente. Probá con wifi.';if(B){B.disabled=false;B.textContent='Conectar y bajar los datos';}}}
+ catch(e){if(E)E.textContent=e.message&&!/fetch|network|load/i.test(e.message)?e.message:'No hay conexión con el puente. Probá de nuevo en un rato.';if(B){B.disabled=false;B.textContent='Conectar y bajar los datos';}}}
 document.addEventListener('input',function(ev){if(ev.target.id==='q'){U.q=ev.target.value;var r=ruta();if(r.v==='clientes'){var pos=ev.target.selectionStart;render();var q=$('#q');q.focus();try{q.setSelectionRange(pos,pos);}catch(e){}}}});
 
 /* ================= arranque ================= */
@@ -1240,7 +1285,7 @@ if('serviceWorker' in navigator)window.addEventListener('load',function(){naviga
 /* sin zoom con dos dedos en iPhone (Safari ignora user-scalable) y sin zoom por doble toque */
 document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
 document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});
-window.MP={render:render,actualizar:actualizar,datos:function(){return D;},semana:semana,sugeridos:sugeridos,hoja:function(h){if(h!==undefined){U.hoja=h;render();}return U.hoja;}};
+window.MP={render:render,actualizar:actualizar,datos:function(){return D;},semana:semana,sugeridos:sugeridos,hoja:function(h){if(h!==undefined){U.hoja=h;render();}return U.hoja;},encolar:encolar,cola:function(){return COLA;}};
 })();
 </script>
 </body>
