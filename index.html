@@ -352,6 +352,10 @@ div.row .tx b{white-space:normal}
 .ajp{margin-bottom:4px}.ajp button{flex:none}
 .jin{flex:1;min-width:0;width:100%;text-align:center;font:800 20px var(--d);color:var(--tx);background:none;border:0;padding:8px 0;outline:none}
 .jin.cam,.stc b.cam{color:var(--a1)}
+/* 12 nov 2026 · todas las series en un renglón, del mismo ancho */
+.qn.ajs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:5px;margin:0 0 4px}
+.qn.ajs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;min-height:58px;padding:6px 2px;border-radius:14px;font-family:var(--d);font-weight:600;font-size:11.5px;line-height:1.2;overflow:hidden}
+.qn.ajs button b{font-weight:800;font-size:13.5px}.qn.ajs button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ajs button.cz:not([aria-pressed="true"]){color:var(--a1);border-color:var(--a1)}.ajh{margin:4px 2px 10px;color:var(--tx3);font-size:11.5px}
 .ajv{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;font-size:12.5px}.ajv span{padding:4px 9px;border-radius:99px;background:var(--surf2);border:1px solid var(--line);font-family:var(--d)}.ajv small{flex-basis:100%;color:var(--tx3);font-size:11.5px}
 .sug button{display:inline-flex;align-items:center;gap:6px;text-align:left}.sug button small{font-size:11.5px;font-weight:500;color:var(--tx3)}
 .aj2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.aj2 .sec{margin:0}
@@ -832,13 +836,18 @@ function horaK(x){return x.h?String(x.h).split(':')[0]:'—';}
 function avanceTurno(x){var iso=ymd(x.s.f),n=0,t=0;(x.s.d.ejercicios||[]).filter(function(e){return e.nombre;}).forEach(function(e){t+=seriesDe(e).length;n+=hechasEj(x.c.id,iso,e);});return {n:n,t:t};}
 /* menú rápido: las series que faltan (las que no marcaste) y cómo quedan con los cambios */
 function ajFaltan(H){var r=[];seriesDe(H.e).forEach(function(z,j){if(!serLocal(H.cid,H.iso,H.e.nombre,j+1))r.push({n:j+1,z:z});});return r;}
-function ajPeso(H,p){if(H.pt!=null)return H.pt;var v=p||'';for(var k=0;k<Math.abs(H.dp);k++)v=pasoPeso(v||'0 kg',H.dp>0?1:-1);return v;}
-function ajReps(H,r){if(!H.dr)return r||'';return String(r||'').replace(/\d+/g,function(m){return String(Math.max(1,+m+H.dr));});}
-function ajNuevo(H){return ajFaltan(H).map(function(x){return {n:x.n,peso:ajPeso(H,x.z.peso),reps:ajReps(H,x.z.reps),p0:x.z.peso||'',r0:x.z.reps||''};});}
-function ajLeer(H){var f=$('#jpv');if(!f)return;var v=f.value.trim(),F=ajFaltan(H),mostrado=F.length?ajPeso(H,F[0].z.peso):'';if(v!==String(mostrado||'')){H.pt=v;H.dp=0;}}
+/* 12 nov 2026 · cada serie que falta guarda su peso y reps: «Todas» cambia todas juntas (respeta las pirámides), «S2» cambia solo esa */
+function ajIni(H){if(H.v)return;H.v={};ajFaltan(H).forEach(function(x){H.v[x.n]={peso:x.z.peso||'',reps:x.z.reps||''};});}
+function ajObj(H){ajIni(H);var F=ajFaltan(H);if(H.sel&&!F.some(function(x){return x.n===H.sel;}))H.sel=0;return H.sel?F.filter(function(x){return x.n===H.sel;}):F;}
+function ajVal(H,n){ajIni(H);if(!H.v[n]){var k=Math.max.apply(null,[0].concat(Object.keys(H.v).map(Number).filter(function(q){return q<n;}))),z=seriesDe(H.e)[n-1]||{};H.v[n]=k?{peso:H.v[k].peso,reps:H.v[k].reps}:{peso:z.peso||'',reps:z.reps||''};}return H.v[n];}   /* una serie que sumaste copia a la última */
+function ajNuevo(H){return ajFaltan(H).map(function(x){var v=ajVal(H,x.n);return {n:x.n,peso:v.peso,reps:v.reps,p0:x.z.peso||'',r0:x.z.reps||''};});}
+function ajLeer(H){var f=$('#jpv');if(!f)return;var O=ajObj(H);if(!O.length)return;var v=f.value.trim();if(v!==String(ajVal(H,O[0].n).peso||''))O.forEach(function(x){ajVal(H,x.n).peso=v;});}
+function ajPaso(H,campo,dir){ajObj(H).forEach(function(x){var v=ajVal(H,x.n);
+ if(campo==='peso')v.peso=numPeso(v.peso)?pasoPeso(v.peso,dir):(dir>0?'1 kg':v.peso);
+ else v.reps=/\d/.test(v.reps)?String(v.reps).replace(/\d+/g,function(m){return String(Math.max(1,+m+dir));}):(dir>0?'1':v.reps);});}
 function abrirAj(cid,i,j){var c=porId(cid),x=c&&semana(c).filter(function(z){return z.i===+i;})[0],e=x&&(x.d.ejercicios||[]).filter(function(z){return z.nombre;})[+j];if(!e)return;
  var enDia=(x.d.ejercicios||[]).filter(function(z){return z.nombre;}).map(function(z){return z.nombre;});
- U.hoja={t:'aj',cid:cid,i:+i,iso:ymd(x.f),dia:x.d.dia,e:e,dp:0,dr:0,pt:null,ns:seriesDe(e).length,sg:sugeridos(c,e.nombre,null,enDia,8),otro:false,quitar:false};render();}
+ U.hoja={t:'aj',cid:cid,i:+i,iso:ymd(x.f),dia:x.d.dia,e:e,sel:0,v:null,ns:seriesDe(e).length,sg:sugeridos(c,e.nombre,null,enDia,8),otro:false,quitar:false};render();}
 
 /* ================= hojas (ventanas de abajo) ================= */
 function leerNuevoCli(H){var g=function(i){var e=$('#'+i);return e?e.value:null;},v;if((v=g('ncN'))!=null)H.n=v;if((v=g('ncC'))!=null)H.cuota=v;if((v=g('ncH'))!=null)H.hora=v;if((v=g('ncI'))!=null)H.ini=v;}
@@ -863,13 +872,14 @@ function hojaHTML(){var h=U.hoja;if(!h)return '';var s='';
    '<button type="button" class="sec" data-h="camb|1"'+(h.camb?' aria-pressed="true"':'')+'>Cambiar por otro</button>'+
    '<button type="button" class="sec pel'+(h.quitar?' arma':'')+'" data-act="ej-quit">'+(h.quitar?'Tocá de nuevo para quitarlo':'Quitar ejercicio')+'</button></div>'+
    (h.camb?'<div class="edc"><input id="hej" class="in" list="ejlist" autocomplete="off" placeholder="Nombre del ejercicio nuevo" value="'+esc(h.nn||'')+'"><input id="hejp" class="in" placeholder="Peso (opcional)" value="">'+listaEj()+'<button type="button" class="pri" data-act="g-camb">Cambiar</button></div>':'')+'<p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Todo queda en el celular y llega al Monitor cuando toques Actualizar con wifi</p>';}
- if(h.t==='aj'){var cJ=porId(h.cid),eJ=h.e,F=ajFaltan(h),NV=ajNuevo(h),n0=seriesDe(eJ).length,hhJ=n0-F.length,pv0=F.length?ajPeso(h,F[0].z.peso):'',rv0=F.length?ajReps(h,F[0].z.reps):'',
+ if(h.t==='aj'){var cJ=porId(h.cid),eJ=h.e,F=ajFaltan(h),NV=ajNuevo(h),n0=seriesDe(eJ).length,hhJ=n0-F.length,OJ=ajObj(h),o0=OJ[0],v0=o0?ajVal(h,o0.n):{},pv0=v0.peso||'',rv0=v0.reps||'',cP0=o0&&pv0!==(o0.z.peso||''),cR0=o0&&rv0!==(o0.z.reps||''),
    camP=NV.some(function(z){return z.peso!==z.p0||z.reps!==z.r0;}),camS=h.ns!==n0;
   s='<h3>'+esc(acentos(eJ.nombre))+'</h3><p class="muted" style="margin:2px 0 10px;font-size:13px">'+esc(nom1(cJ.nombre))+' · '+esc(String(h.dia||'').toLowerCase())+' · '+(hhJ?hhJ+' de '+n0+' series hechas':n0+' series')+'</p>'+
-   (F.length?'<span class="l">Peso</span><div class="stc ajp"><button type="button" data-h="jp|-1" aria-label="Bajar peso">−</button><input id="jpv" class="jin'+(camP&&pv0!==F[0].z.peso?' cam':'')+'" value="'+esc(pv0)+'" placeholder="Sin peso" autocomplete="off" aria-label="Peso"><button type="button" data-h="jp|1" aria-label="Subir peso">+</button></div>':'<p class="muted" style="font-size:13px">Ya hizo todas las series.</p>')+
-   '<div class="stp">'+(F.length?'<div><span class="l">Reps</span><div class="stc"><button type="button" data-h="jr|-1" aria-label="Una repetición menos">−</button><b'+(h.dr?' class="cam"':'')+'>'+esc(rv0||'—')+'</b><button type="button" data-h="jr|1" aria-label="Una repetición más">+</button></div></div>':'')+
+   (F.length>1?'<div class="qn ajs" role="group" aria-label="Qué series cambiar"><button type="button" data-h="jsel|0" aria-pressed="'+!h.sel+'"><b>Todas</b></button>'+NV.map(function(z){var cz=z.peso!==z.p0||z.reps!==z.r0;return '<button type="button" data-h="jsel|'+z.n+'" aria-pressed="'+(h.sel===z.n)+'"'+(cz?' class="cz"':'')+'><b>S'+z.n+'</b><span>'+esc(z.peso||'—')+'</span><span>× '+esc(z.reps||'—')+'</span></button>';}).join('')+'</div>'+(hhJ?'<p class="ajh">Las '+hhJ+' ya hechas no cambian</p>':''):'')+
+   (F.length?'<span class="l">Peso'+(F.length>1?(h.sel?' · serie '+h.sel:' · todas'):'')+'</span><div class="stc ajp"><button type="button" data-h="jp|-1" aria-label="Bajar peso">−</button><input id="jpv" class="jin'+(cP0?' cam':'')+'" value="'+esc(pv0)+'" placeholder="Sin peso" autocomplete="off" aria-label="Peso"><button type="button" data-h="jp|1" aria-label="Subir peso">+</button></div>':'<p class="muted" style="font-size:13px">Ya hizo todas las series.</p>')+
+   '<div class="stp">'+(F.length?'<div><span class="l">Reps</span><div class="stc"><button type="button" data-h="jr|-1" aria-label="Una repetición menos">−</button><b'+(cR0?' class="cam"':'')+'>'+esc(rv0||'—')+'</b><button type="button" data-h="jr|1" aria-label="Una repetición más">+</button></div></div>':'')+
    '<div><span class="l">Series</span><div class="stc"><button type="button" data-h="js|-1" aria-label="Una serie menos">−</button><b'+(camS?' class="cam"':'')+'>'+h.ns+'</b><button type="button" data-h="js|1" aria-label="Una serie más">+</button></div></div></div>'+
-   (camP&&F.length?'<p class="ajv">'+NV.map(function(z){return '<span>S'+z.n+' '+esc(z.peso||'—')+' × '+esc(z.reps||'—')+'</span>';}).join('')+(hhJ?'<small>Las '+hhJ+' ya hechas no cambian</small>':'')+'</p>':'')+
+   (F.length===1&&hhJ?'<p class="ajh">Las '+hhJ+' ya hechas no cambian</p>':'')+
    '<button type="button" class="pri" style="margin-top:12px" data-act="g-aj"'+(camP||camS?'':' disabled')+'>'+(camP||camS?'Guardar cambios':'Sin cambios')+'</button>'+
    '<label class="l" style="margin-top:16px">Cambiar por</label><div class="qn sug">'+h.sg.map(function(n,k){var u=ultimoDe(cJ,n);return '<button type="button" data-h="sug|'+k+'">'+esc(acentos(n))+(u&&u.peso?'<small>'+esc(u.peso)+'</small>':'')+'</button>';}).join('')+
     '<button type="button" data-h="otro|1" aria-pressed="'+h.otro+'">Otro…</button></div>'+
@@ -1180,8 +1190,9 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
   if(ph[0]==='ns'){var nS=Math.max(1,Math.min(10,seriesDe(H.e).length+(+ph[1])));editarEj(H.cid,H.i,H.dia,'series',H.e.nombre,{n:nS});refrescarHoja(H,H.e.nombre);if(H.n>nS)H.n=nS;toast(nS+' series · guardado en el celular');}
   if(ph[0]==='n'){H.n=+ph[1];hojaSerie(H);}if(ph[0]==='pp')H.pv=pasoPeso(H.pv||'0 kg',+ph[1]);if(ph[0]==='rp'){var rv=parseInt(H.rv,10);H.rv=String(Math.max(1,(isNaN(rv)?0:rv)+(+ph[1])));}if(ph[0]==='rir')H.rir=H.rir===ph[1]?null:ph[1];if(ph[0]==='tag'){var ix=H.tags.indexOf(ph[1]);if(ix>=0)H.tags.splice(ix,1);else H.tags.push(ph[1]);}
   if(H.t==='aj'){ajLeer(H);var hc3=$('#hej');if(hc3)H.nn=hc3.value;
-   if(ph[0]==='jp'){if(H.pt!=null)H.pt=pasoPeso(H.pt||'0 kg',+ph[1]);else{var F0=ajFaltan(H)[0],b0=F0&&F0.z.peso;if(!numPeso(b0)&&+ph[1]>0&&!H.dp)H.pt='1 kg';else H.dp+=(+ph[1]);}}
-   if(ph[0]==='jr')H.dr+=(+ph[1]);
+   if(ph[0]==='jp')ajPaso(H,'peso',+ph[1]);
+   if(ph[0]==='jr')ajPaso(H,'reps',+ph[1]);
+   if(ph[0]==='jsel')H.sel=+ph[1];
    if(ph[0]==='js')H.ns=Math.max(1,Math.min(10,H.ns+(+ph[1])));
    if(ph[0]==='otro'){H.otro=!H.otro;H.quitar=false;if(H.otro)setTimeout(function(){var f=$('#hej');if(f)f.focus();},50);}
    if(ph[0]==='sug'){var nS2=H.sg[+ph[1]],cS3=porId(H.cid);if(!nS2)return;var n1=COLA.length;
