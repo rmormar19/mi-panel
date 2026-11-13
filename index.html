@@ -1104,7 +1104,7 @@ function render0(){var r=ruta(),v=$('#v');
  if(!CONF||!D||r.v==='conectar'){v.innerHTML=V.conectar();$('#nb').hidden=true;$('#hoja').innerHTML='';return;}
  var f=V[r.v]||V[''],hoja=hojaHTML(),y=scrollY,mismo=U.ultV===location.hash;v.innerHTML=f.apply(null,r.a);$('#nb').hidden=false;U.ultV=location.hash;
  var tp=v.querySelector('.tabs [aria-pressed="true"]'),tb=tp&&tp.parentNode;if(tb&&tb.scrollWidth>tb.clientWidth)tb.scrollLeft=Math.max(0,tp.getBoundingClientRect().left-tb.getBoundingClientRect().left+tb.scrollLeft-(tb.clientWidth-tp.offsetWidth)/2);
- var hj=$('#hoja'),habia=!!hj.innerHTML;if(hoja&&!habia){var tt=$('#toast');if(tt&&tt.classList.contains('conb')){tt.classList.remove('on','conb');U.deshacer=null;}}hj.innerHTML=hoja;hj.classList.toggle('nueva',!!hoja&&!habia);document.body.style.overflow=hoja?'hidden':'';
+ var hj=$('#hoja'),habia=!!hj.innerHTML;if(hoja&&!habia){var tt=$('#toast');if(tt&&tt.classList.contains('conb')){tt.classList.remove('on','conb');U.deshacer=null;}}var shA=habia&&hj._h===U.hoja&&hj.querySelector('.sheet'),stA=shA?shA.scrollTop:0;hj.innerHTML=hoja;hj._h=U.hoja;if(shA){var shN=hj.querySelector('.sheet');if(shN)shN.scrollTop=stA;}hj.classList.toggle('nueva',!!hoja&&!habia);   /* 12 nov 2026 · la ventana no vuelve arriba al tocar algo adentro (el 2.º toque de «Quitar ejercicio» caía en otro lado) */document.body.style.overflow=hoja?'hidden':'';
  if(mismo){v.style.animation='none';window.scrollTo(0,y);return;}
  var sec={'':'',clientes:'clientes',c:'clientes',ej:'clientes',turno:'turno',resumen:'resumen',cobros:'cobros'}[r.v];
  document.querySelectorAll('#nb button').forEach(function(b){if(b.dataset.go===sec)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
@@ -1253,7 +1253,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
  if(a==='g-camb'){var Hc2=U.hoja,nmC=(($('#hej')||{}).value||'').trim(),pC=(($('#hejp')||{}).value||'').trim();if(!nmC){toast('Escribí el ejercicio nuevo');return;}
   if(N(nmC)===N(Hc2.e.nombre)){toast('Es el mismo ejercicio');return;}
   var n3=COLA.length;editarEj(Hc2.cid,Hc2.i,Hc2.dia,'reemplazar',Hc2.e.nombre,{nuevo:{nombre:nmC,peso:pC}});U.hoja=null;render();toast(Hc2.e.nombre+' → '+nmC,COLA.slice(n3).map(function(q){return q.uid;}));return;}
- if(a==='ej-quit'){var Hq=U.hoja;if(!Hq.quitar){Hq.quitar=true;render();setTimeout(function(){if(U.hoja===Hq&&Hq.quitar){Hq.quitar=false;render();}},3500);return;}
+ if(a==='ej-quit'){var Hq=U.hoja;if(!Hq.quitar){Hq.quitar=true;render();setTimeout(function(){if(U.hoja===Hq&&Hq.quitar){Hq.quitar=false;render();}},5000);return;}
   var n4=COLA.length;editarEj(Hq.cid,Hq.i,Hq.dia,'quitar',Hq.e.nombre);U.hoja=null;render();toast('Quitado: '+Hq.e.nombre,COLA.slice(n4).map(function(q){return q.uid;}));return;}
  if(a==='g-serie'){var Hs=U.hoja,cS2=porId(Hs.cid),xS2=cS2&&semana(cS2).filter(function(z){return z.i===Hs.i;})[0];if(!xS2)return;var txs=$('#hnota');if(txs)Hs.txt=txs.value;
   marcarSerie(cS2,xS2,Hs.e,Hs.n,{peso:Hs.pv,reps:Hs.rv,rir:Hs.rir});
