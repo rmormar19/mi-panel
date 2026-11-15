@@ -467,7 +467,7 @@ var ymd=function(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+
 var ym=function(d){return ymd(d).slice(0,7);};
 var hoy0=function(){var t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
 /* la semana cierra el domingo a las 6 de la mañana, igual que en el Monitor */
-var lunesOp=function(ts){var d=new Date(ts),x=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7));if(d.getDay()===0&&d.getHours()>=6)x.setDate(x.getDate()+7);return x;};
+var lunesOp=function(ts){var d=new Date(ts),x=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7));if(d.getDay()===0&&d.getHours()>=22)x.setDate(x.getDate()+7);return x;};
 /* 10 nov 2026 · un solo criterio con el puente y el Monitor: la semana EN CURSO y la de lo que se anota es la de
    calendario (lunes 00:00). lunesOp queda sólo para ubicar las fotos viejas del historial. Antes, un domingo después
    de las 06:00 mostraba la semana siguiente y lo anotado ese día salía con fecha de la otra semana. */
@@ -853,6 +853,11 @@ function pasoPeso(p,dir,nom,gr){return PESOS.paso(p,dir,nom,gr);}
 /* 13 nov 2026 · grupo del ejercicio (lo calcula el Monitor) y n real de la serie: el Monitor cuenta todas las series, también las vacías */
 /* 14 nov 2026 · los drops de una serie, como los muestra el Monitor: «↘ 7 placas × 8» (Ricky: «8 pesadas + 8 livianas») */
 function dropTx(z,corto){return ((z&&z.drops)||[]).filter(Boolean).map(function(d){var p=String(d.peso||'—');if(corto)p=p.replace(/\s*placas?\b/i,' pl');return ' ↘ '+p+(d.reps&&!corto?' × '+d.reps:'');}).join('');}
+/* la fila de unidad y equivalencia de «Agregar ejercicio» (se actualiza sin redibujar la hoja, así el toque en «Agregar» no se pierde) */
+function ajuAgr(h,nm,pv){var gr=grEj(h.cid,nm),fam=PESOS.familia(nm,gr),u=pv?PESOS.uniDe(pv,nm,gr):(h.nu||(fam?'placas':'kg')),eq=PESOS.equiv(pv,nm,gr);
+ return '<span class="eq" id="hejeq">'+esc(eq||(fam?'Máquina: '+PESOS.stacks()[fam].et:''))+'</span><span class="uns" role="group" aria-label="Unidad">'+['kg','lb'].concat(fam?['placas']:[]).map(function(x){return '<button type="button" data-h="au|'+x+'" aria-pressed="'+(u===x)+'">'+(x==='placas'?'Placas':x)+'</button>';}).join('')+'</span>';}
+/* 14 nov 2026 · el día cuenta «completo» (todas las series en verde) cuando se tocó «Hecho»; si se marcó solo con la primera serie, o quedó parcial, no */
+function diaCompleto(x){if(!x||x.e!=='ok')return false;if(x.local)return !x.local.auto;return !(x.d&&x.d.parcial);}
 function grEj(cid,nom){var c=porId(cid);return c&&c.regionesEj&&c.regionesEj[nom]||'';}
 function nReal(e,n){var z=seriesDe(e)[n-1],i=z?(e.series||[]).indexOf(z):-1;return i>=0?i+1:n;}
 function hechasEj(cid,iso,e){var n=0;seriesDe(e).forEach(function(z,j){if(serLocal(cid,iso,e.nombre,j+1))n++;});return n;}
@@ -860,8 +865,8 @@ function marcarSerie(c,xs,e,n,sv){var iso=ymd(xs.f),z=seriesDe(e)[n-1]||{},cambi
  encolar(c.id,{tipo:'serie',dia:xs.d.dia,ejercicio:{nombre:e.nombre},n:nReal(e,n),serie:{reps:String(sv.reps||''),peso:String(sv.peso||''),rir:sv.rir!=null?String(sv.rir):''},ts:+xs.f+12*36e5},
   [nom1(c.nombre)+' · '+e.nombre,'Serie '+n+' hecha · '+(sv.peso||'—')+' × '+(sv.reps||'—')+(cambio?' (cambiada)':'')+(sv.rir!=null?' · RIR '+sv.rir:'')],serK(c.id,iso,e.nombre,n));
  /* la primera serie marca la sesión como hecha */
- var ke='est|'+c.id+'|'+iso;if(!buscaK(ke)&&xs.e!=='ok')encolar(c.id,{tipo:'sesion',dia:xs.d.dia,estado:'verde',ts:+xs.f+12*36e5,series:0,total:0},[nom1(c.nombre)+' · '+DS[xs.i].toLowerCase()+' '+dm(xs.f),'Sesión hecha'],ke);}
-function estLocal(cid,iso){var r=buscaK('est|'+cid+'|'+iso);if(!r)return estApp(cid,iso);var d=r.x.d;return {v:d.tipo==='libre'?'libre':d.tipo==='soloCardio'?'verde':d.estado,pend:r.pend,sc:d.tipo==='soloCardio'};}
+ var ke='est|'+c.id+'|'+iso;if(!buscaK(ke)&&xs.e!=='ok')encolar(c.id,{tipo:'sesion',dia:xs.d.dia,estado:'verde',auto:true,ts:+xs.f+12*36e5,series:0,total:0},[nom1(c.nombre)+' · '+DS[xs.i].toLowerCase()+' '+dm(xs.f),'Sesión hecha'],ke);}
+function estLocal(cid,iso){var r=buscaK('est|'+cid+'|'+iso);if(!r)return estApp(cid,iso);var d=r.x.d;return {v:d.tipo==='libre'?'libre':d.tipo==='soloCardio'?'verde':d.estado,pend:r.pend,sc:d.tipo==='soloCardio',auto:!!d.auto};}
 /* 12 nov 2026 · lo que el cliente marcó en su app y el Monitor todavía no aplicó (lo manda el puente aparte) */
 function estApp(cid,iso){var L=(D&&D.app&&D.app[cid])||[],x=null;for(var i=0;i<L.length;i++)if(L[i].iso===iso)x=L[i];if(!x||!x.estado)return null;return {v:x.estado,pend:false,app:true};}
 function pagoLocal(nid,mes){var r=buscaK('pago|'+nid+'|'+mes);if(!r)return null;var d=r.x.d;return {fecha:d.fecha,medio:d.medio,monto:d.monto,origen:'celular',pend:r.pend};}
@@ -984,7 +989,7 @@ function sugeridos(c,base,grupos,fuera,max){var G=mapaGrupos(),tb=base?tokEj(bas
 function ultimoDe(c,nombre){var W=semanasEj(c,nombre);return W.length?W[W.length-1]:null;}
 function pesoPara(c,viejo,nuevo){var u=ultimoDe(c,nuevo);if(u&&u.peso)return u.peso;var tv=tokEj(viejo.nombre),mov=tokEj(nuevo).some(function(w){return !EQW[w]&&tv.indexOf(w)>=0;}),t=topSerie(viejo);return mov&&t&&t.peso?t.peso:'';}
 function horaK(x){return x.h?String(x.h).split(':')[0]:'—';}
-function avanceTurno(x){var iso=ymd(x.s.f),n=0,t=0;(x.s.d.ejercicios||[]).filter(function(e){return e.nombre;}).forEach(function(e){t+=seriesDe(e).length;n+=hechasEj(x.c.id,iso,e);});return {n:n,t:t};}
+function avanceTurno(x){var iso=ymd(x.s.f),n=0,t=0,hD=diaCompleto(x.s);(x.s.d.ejercicios||[]).filter(function(e){return e.nombre;}).forEach(function(e){var k=seriesDe(e).length;t+=k;n+=hD?k:hechasEj(x.c.id,iso,e);});return {n:n,t:t};}   /* 14 nov 2026: día «Hecho» = todas las series hechas */
 /* menú rápido: las series que faltan (las que no marcaste) y cómo quedan con los cambios */
 function ajFaltan(H){var r=[];seriesDe(H.e).forEach(function(z,j){if(!serLocal(H.cid,H.iso,H.e.nombre,j+1))r.push({n:j+1,z:z});});return r;}
 /* 12 nov 2026 · cada serie que falta guarda su peso y reps: «Todas» cambia todas juntas (respeta las pirámides), «S2» cambia solo esa */
@@ -1101,7 +1106,7 @@ function hojaHTML(){var h=U.hoja;if(!h)return '';var s='';
    (function(){var nmP=h.nn||'',grP=grEj(h.cid,nmP),famP=PESOS.familia(nmP,grP),uP=h.np?PESOS.uniDe(h.np,nmP,grP):(h.nu||(famP?'placas':'kg')),eqP=PESOS.equiv(h.np,nmP,grP);
     /* 14 nov 2026 · como en el Monitor: kg, lb o placas, con la equivalencia; tocar otra unidad convierte el peso */
     return '<span class="l">Peso</span><div class="stc ajp"><button type="button" data-h="ap|-1" aria-label="Bajar peso">−</button><input id="hejpn" class="jin" placeholder="Sin peso" autocomplete="off" aria-label="Peso" value="'+esc(h.np||'')+'"><button type="button" data-h="ap|1" aria-label="Subir peso">+</button></div>'+
-     '<div class="aju"><span class="eq" id="hejeq">'+esc(eqP||(famP?'Máquina: '+PESOS.stacks()[famP].et:''))+'</span><span class="uns" role="group" aria-label="Unidad">'+['kg','lb'].concat(famP?['placas']:[]).map(function(u){return '<button type="button" data-h="au|'+u+'" aria-pressed="'+(uP===u)+'">'+(u==='placas'?'Placas':u)+'</button>';}).join('')+'</span></div>';})()+
+     '<div class="aju" id="hejaju">'+ajuAgr(h,nmP,h.np||'')+'</div>';})()+
    '<button type="button" class="pri" style="margin-top:12px" data-act="g-agr">Agregar</button><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se manda solo al Monitor en unos segundos</p>';}
  if(h.t==='cardio'){var cC=porId(h.cid),sC=semana(cC),xC=sC.filter(function(z){return z.i===h.i;})[0],frz=(xC.d&&(xC.d.ejercicios||[]).filter(function(e){return e&&e.nombre;}).length)?xC.d:null;
   s='<h3>Solo cardio</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">'+esc(nom1(cC.nombre))+' · '+DS[h.i].toLowerCase()+' '+dm(xC.f)+'. Hizo cardio en vez de fuerza: el día cuenta como entrenado.</p>'+
@@ -1155,9 +1160,9 @@ V.turno=function(){var dow=new Date().getDay(),L=semVieja()?[]:sesionesDia(dow),
  s+='<div class="tc"><button type="button" class="tch" data-go="c/'+esc(c.id)+'"><span class="ini" style="background:'+col(c.nombre)+'">'+esc(ini(c.nombre))+'</span><span class="tx"><b>'+esc(c.nombre)+'</b><small>'+(E.length?esc(gTxt(d.grupo))+' · '+E.length+' ejercicios':'Cardio')+(x.h?' · '+(String(x.h).indexOf(':')>0?x.h:x.h+' h'):'')+'</small></span><span class="chip '+ESCH[x.s.e]+'">'+ESTX[x.s.e]+(x.s.local&&x.s.local.pend?' · sin enviar':'')+'</span></button>'+
   (ausente(c)?'<div class="aviso" style="margin:4px 0 8px">'+esc((c.estado.txt||ESTADO[c.estado.e][0]))+'</div>':'')+
   E.map(function(e,j){var h=topSerie(e),a=anterior(c,e.nombre),ss=seriesDe(e),s0=ss[0]||{},nota=anotado(c.id,iso,e.nombre);
-   var hh=hechasEj(c.id,iso,e),todas=ss.length&&hh===ss.length;
+   var hD=diaCompleto(x.s),hh=hD?ss.length:hechasEj(c.id,iso,e),todas=ss.length&&hh===ss.length;   /* 14 nov 2026: con «Hecho», todo en verde */
    return '<div class="exb"><button type="button" class="ex" data-aj="'+esc(c.id)+'|'+x.s.i+'|'+j+'" aria-label="Cambiar '+esc(acentos(e.nombre))+'"><span class="ck'+(todas?' ok':'')+'">'+(todas?I.ok:(j+1))+'</span><span class="tx"><b>'+esc(acentos(e.nombre))+'</b><small>'+(hh?hh+' de '+ss.length+' hechas':ss.length+' × '+esc(s0.reps||'—'))+(nota?' · <span class="bl">'+esc(nota)+'</span>':'')+'</small></span>'+compPw(h,a)+'<span class="aje" aria-hidden="true">'+I.edit+'</span></button>'+
-    (ss.length&&!ausente(c)?'<div class="srs" style="--n:'+(ss.length<=5?ss.length:ss.length===6?3:ss.length<=8?4:5)+'">'+ss.map(function(z,k){var Ls=serLocal(c.id,iso,e.nombre,k+1),v=Ls?Ls.s:z,cam=Ls&&(String(v.peso||'')!==String(z.peso||'')||String(v.reps||'')!==String(z.reps||''));
+    (ss.length&&!ausente(c)?'<div class="srs" style="--n:'+(ss.length<=5?ss.length:ss.length===6?3:ss.length<=8?4:5)+'">'+ss.map(function(z,k){var Ls=serLocal(c.id,iso,e.nombre,k+1)||(diaCompleto(x.s)?{s:z,dia:true}:null),v=Ls?Ls.s:z,cam=Ls&&(String(v.peso||'')!==String(z.peso||'')||String(v.reps||'')!==String(z.reps||''));
      return '<button type="button" class="sr'+(Ls?' ok':'')+(cam?' cam':'')+'" data-ser="'+esc(c.id)+'|'+x.s.i+'|'+j+'|'+(k+1)+'" aria-pressed="'+(!!Ls)+'" aria-label="Serie '+(k+1)+': '+esc(v.peso||'sin peso')+' por '+esc(v.reps||'—')+(Ls?', hecha':'')+'"><i>'+(Ls?I.ok:'S'+(k+1))+'</i><b>'+esc(v.peso||'—')+'</b><small>× '+esc(v.reps||'—')+'</small>'+(dropTx(z,1)?'<small class="drp">'+esc(dropTx(z,1))+'</small>':'')+'</button>';}).join('')+'</div>':'')+'</div>';}).join('')+
   (!ausente(c)?'<button type="button" class="agej" data-agr="'+esc(c.id)+'|'+x.s.i+'">+ Agregar ejercicio</button>':'')+
   '<div class="tcb"><button type="button" class="b'+(x.s.e==='ok'?' on-ok':'')+'" data-est="'+esc(c.id)+'|'+x.s.i+'|verde">Hecho</button><button type="button" class="b'+(x.s.e==='fa'?' on-no':'')+'" data-est="'+esc(c.id)+'|'+x.s.i+'|rojo">Faltó</button><button type="button" class="b'+(x.s.e==='li'?' on-li':'')+'" data-est="'+esc(c.id)+'|'+x.s.i+'|libre">No viene</button>'+(c.regionesEj?'<button type="button" class="b'+(x.s.local&&x.s.local.sc||x.s.d&&x.s.d.soloCardio?' on-sc':'')+'" data-sc="'+esc(c.id)+'|'+x.s.i+'">Cardio</button>':'')+'</div></div>';
@@ -1354,9 +1359,10 @@ async function enviarYActualizar(){if(U.leyendo||U.enviando)return;if(!navigator
 
 /* ================= eventos ================= */
 /* 14 nov 2026 · al escribir el peso (o el ejercicio) en «Agregar ejercicio», la equivalencia kg / lb / placas se actualiza sola */
-document.addEventListener('change',function(ev){var t=ev.target;if(t&&t.id==='hejn'&&U.hoja&&U.hoja.t==='agregar'){U.hoja.nn=t.value;var hp=$('#hejpn');if(hp)U.hoja.np=hp.value;render();}});
-document.addEventListener('input',function(ev){var t=ev.target;if(!t||!U.hoja||U.hoja.t!=='agregar'||(t.id!=='hejpn'&&t.id!=='hejn'))return;var eq=$('#hejeq');if(!eq)return;
- var nm=(($('#hejn')||{}).value||''),pv=(($('#hejpn')||{}).value||''),gr=grEj(U.hoja.cid,nm),fam=PESOS.familia(nm,gr);eq.textContent=PESOS.equiv(pv,nm,gr)||(fam?'Máquina: '+PESOS.stacks()[fam].et:'');});
+['input','change'].forEach(function(tp){document.addEventListener(tp,function(ev){var t=ev.target;if(!t||!U.hoja||U.hoja.t!=='agregar'||(t.id!=='hejpn'&&t.id!=='hejn'))return;var box=$('#hejaju');if(!box)return;
+ var nm=(($('#hejn')||{}).value||''),pv=(($('#hejpn')||{}).value||'');U.hoja.nn=nm;U.hoja.np=pv;var tmp=document.createElement('div');tmp.innerHTML=ajuAgr(U.hoja,nm,pv);
+ var nb=tmp.querySelectorAll('.uns button').length,ob=box.querySelectorAll('.uns button').length,eq=$('#hejeq'),eqN=tmp.querySelector('#hejeq');
+ if(nb!==ob)box.innerHTML=tmp.innerHTML;else if(eq&&eqN)eq.textContent=eqN.textContent;});});   /* los botones se rearman sólo si cambia la máquina: así el toque no se pierde */
 document.addEventListener('click',function(ev){var t=ev.target.closest('button,[data-go],[data-act]');if(!t)return;var d=t.dataset;
  if(d.go!=null){ir(d.go);return;}
  if(d.atras){if(history.length>1)history.back();else ir('');return;}
