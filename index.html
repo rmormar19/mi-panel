@@ -430,6 +430,10 @@ input,textarea,select,input.in,textarea.wab,.minin{font-size:16px!important}
 .ghint{margin:6px 0 0;font-size:11.5px;color:var(--tx4);text-align:center}
 @media (prefers-reduced-motion:reduce){.spk circle{animation:none;transform:none}.gw .garea{animation:none;opacity:1}.gw .gdot2{animation:none;transform:none}}
 .ncli{margin:10px 0 4px}.bajab{margin-top:14px}.baja-c{display:grid;gap:4px;margin-top:14px}.baja-c small{color:var(--tx3);font-size:12.5px}.baja-c .sec{margin-top:8px}
+.novt{width:100%;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}.novn{display:flex;align-items:center;gap:8px}.novn em{font-style:normal}.novn i{font-style:normal;font-size:11.5px;font-weight:800;color:#fff;background:var(--a1,#5b8cff);padding:2px 8px;border-radius:999px;animation:novLat 1.6s ease-in-out infinite}.novn svg{transition:transform .35s cubic-bezier(.3,1.3,.5,1);opacity:.8}.novw.ab .novn svg{transform:rotate(180deg)}
+.novc{display:grid;grid-template-rows:0fr;opacity:.4;transition:grid-template-rows .4s cubic-bezier(.3,1,.4,1),opacity .3s}.novc>div{overflow:hidden;min-height:0}.novw.ab .novc{grid-template-rows:1fr;opacity:1}.novw.ab .nov .row{animation:novIn .4s ease both}.novw.ab .nov .row:nth-child(2){animation-delay:.05s}.novw.ab .nov .row:nth-child(3){animation-delay:.1s}.novw.ab .nov .row:nth-child(4){animation-delay:.15s}.novw.ab .nov .row:nth-child(5){animation-delay:.2s}.novw.ab .nov .row:nth-child(6){animation-delay:.25s}
+@keyframes novIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}@keyframes novLat{0%,100%{box-shadow:0 0 0 0 rgba(91,140,255,.55)}60%{box-shadow:0 0 0 6px rgba(91,140,255,0)}}
+@media (prefers-reduced-motion: reduce){.novc,.novn svg{transition:none}.novw.ab .nov .row,.novn i{animation:none}}
 </style>
 </head>
 <body>
@@ -586,7 +590,11 @@ V['']=function(){var L=CL(),dow=new Date().getDay(),hoyS=semVieja()?[]:sesionesD
  s+='<div class="card">'+(hoyS.length?hoyS.map(function(x){var e=x.s.e;return filaCli(x.c,esc(gTxt(x.s.d.grupo))+(ausente(x.c)?' · '+ESTADO[x.c.estado.e][0].toLowerCase():''),'<span class="chip '+ESCH[e]+'">'+ESTX[e]+'</span>').replace('<span class="ini"','<span class="hr num">'+(x.h||'—')+'</span><span class="ini"');}).join(''):'<div class="vacio">'+(semVieja()?'Actualizá para ver las sesiones de esta semana.':'Nadie entrena hoy.')+'</div>')+'</div>';
  /* 14 nov 2026 · Novedades: lo último que anotaron tus clientes en la app (peso, notas, sesiones…), aunque el Monitor esté cerrado */
  var NV=((D&&D.nov)||[]).filter(function(x){return porId(x.cid);}).slice(-6).reverse();
- if(NV.length)s+='<div class="sh"><h2>Novedades</h2><span>últimos 3 días</span></div><div class="card nov">'+NV.map(function(x){var c=porId(x.cid);return '<button type="button" class="row" data-go="c/'+esc(c.id)+'"><span class="ini" style="background:'+col(c.nombre)+'">'+esc(ini(c.nombre))+'</span><span class="tx"><b>'+esc(nom1(c.nombre))+' '+esc(x.txt)+'</b><small>'+hace(new Date(x.t).toISOString())+'</small></span></button>';}).join('')+'</div>';
+ /* 15 nov 2026 · Ricky: «las novedades, con un deslizante para poder verlas o minimizarlas». Se abre y se cierra con el
+    título (queda como lo dejaste) y, cerradas, dicen cuántas hay y cuántas son nuevas desde la última vez que las abriste. */
+ var abN=true,visN=0;try{abN=localStorage.getItem('mp-nov-ab')!=='0';visN=+localStorage.getItem('mp-nov-visto')||0;}catch(e){}
+ var nuN=NV.filter(function(x){return +new Date(x.t)>visN;}).length;if(abN&&NV.length)try{localStorage.setItem('mp-nov-visto',String(Date.now()));}catch(e){}
+ if(NV.length)s+='<div class="novw'+(abN?' ab':'')+'"><button type="button" class="sh novt" data-novt aria-expanded="'+abN+'" aria-controls="novc"><h2>Novedades</h2><span class="novn">'+(nuN&&!abN?'<i>'+nuN+' nueva'+(nuN===1?'':'s')+'</i>':'')+'<em>'+(abN?'últimos 3 días':NV.length+' en 3 días')+'</em><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></button><div class="novc" id="novc"><div><div class="card nov">'+NV.map(function(x){var c=porId(x.cid);return '<button type="button" class="row" data-go="c/'+esc(c.id)+'"><span class="ini" style="background:'+col(c.nombre)+'">'+esc(ini(c.nombre))+'</span><span class="tx"><b>'+esc(nom1(c.nombre))+' '+esc(x.txt)+'</b><small>'+hace(new Date(x.t).toISOString())+'</small></span></button>';}).join('')+'</div></div></div></div>';
  /* 2 · la semana y lo que falta cobrar */
  var pend=cb.sin?[]:cb.pend;
  s+='<div class="k2i"><button type="button" class="card" data-go="resumen"><span>Esta semana</span><b class="num">'+(K.pc!=null?K.pc+' %':'—')+'</b><small>'+K.ok+' de '+K.plan+' sesiones</small></button>'+
@@ -1534,6 +1542,14 @@ document.addEventListener('gesturestart',function(e){e.preventDefault();},{passi
 document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});
 window.MP={render:render,actualizar:actualizar,datos:function(){return D;},semana:semana,sugeridos:sugeridos,hoja:function(h){if(h!==undefined){U.hoja=h;render();}return U.hoja;},encolar:encolar,cola:function(){return COLA;}};
 })();
+</script>
+<script>
+/* 15 nov 2026 · Novedades plegables: abre y cierra sin redibujar la pantalla (así se ve el deslizamiento) */
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-novt]');if(!t)return;var w=t.closest('.novw');if(!w)return;
+ var ab=!w.classList.contains('ab');w.classList.toggle('ab',ab);t.setAttribute('aria-expanded',String(ab));
+ try{localStorage.setItem('mp-nov-ab',ab?'1':'0');if(ab)localStorage.setItem('mp-nov-visto',String(Date.now()));}catch(er){}
+ var em=t.querySelector('.novn em'),n=w.querySelectorAll('.nov .row').length;if(em)em.textContent=ab?'últimos 3 días':n+' en 3 días';var i=t.querySelector('.novn i');if(i&&ab)i.remove();
+ try{if(navigator.vibrate)navigator.vibrate(8);}catch(er){}});
 </script>
 </body>
 </html>
