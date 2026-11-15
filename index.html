@@ -353,6 +353,7 @@ div.row .tx b{white-space:normal}
 .jin{flex:1;min-width:0;width:100%;text-align:center;font:800 20px var(--d);color:var(--tx);background:none;border:0;padding:8px 0;outline:none}
 .jin.cam,.stc b.cam{color:var(--a1)}
 /* 12 nov 2026 · todas las series en un renglón, del mismo ancho */
+.vuel{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;margin:0 0 10px}.vuel span{font-size:13px;color:var(--tx3);font-weight:600}.vuel .sec{min-height:38px;font-size:13px;padding:0 8px}
 .semch{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin:0 -2px;scrollbar-width:none}.semch::-webkit-scrollbar{display:none}
 .semch button{flex:none;min-height:34px;padding:0 13px;border-radius:99px;border:1px solid var(--line);background:var(--surf2);color:var(--tx2);font:600 13px var(--d)}.semch button[aria-pressed="true"]{border-color:var(--a1);color:var(--a1);box-shadow:0 0 0 1px var(--a1) inset}
 .semres{margin:0 4px 8px;font-size:12.5px;color:var(--tx3)}
@@ -610,6 +611,10 @@ V.c=function(id,tab){var c=porId(id);if(!c)return cab('No encontrado')+'<div cla
  var vh=ausente(c)?viajeHasta(c):null;
  var s=cab(esc(c.nombre),(e?'<span class="'+e[1]+'">'+(c.estado.e==='viaje'?'✈ ':'')+e[0]+(vh?' hasta el '+dm(vh):'')+'</span> · ':'')+esc(txtObj(d.objetivos)||'Sin objetivo'));
  if(c.estado&&c.estado.txt&&c.estado.e!=='activo'&&!vh)s+='<div class="aviso az">'+esc(c.estado.txt)+'</div>';
+ /* 14 nov 2026 · volvió de un viaje o una pausa: con reentrada (bloque nuevo desde esta semana) o donde quedó. Lo aplica el Monitor. */
+ var vu=buscaK('vuelta|'+c.id);
+ if(vu)s+='<div class="aviso az">↩ Volvió '+(vu.x.d.acc==='reentrada'?'con reentrada':'donde quedó')+(vu.pend?' · se manda en unos segundos':' · enviado al Monitor')+'</div>';
+ else if(c.estado&&/^(viaje|pausa|ausente|retoma)$/.test(c.estado.e))s+='<div class="vuel"><span>'+(c.estado.e==='retoma'?'¿Cómo retoma?':'¿Ya volvió?')+'</span><button type="button" class="sec" data-act="vuelta" data-v="'+esc(c.id)+'|reentrada">↩ Con reentrada</button><button type="button" class="sec" data-act="vuelta" data-v="'+esc(c.id)+'|retoma">↩ Donde quedó</button></div>';
  var gymC=cb.gym&&cb.gym.some(function(g){return panelDe(g)===c;});
  s+='<div class="strip"><div><span>Semana</span><b class="num">'+(pl.length?hechas+'/'+pl.length:'—')+'</b></div>'+
   '<div><span>Cumplimiento</span><b class="num">'+(tp?Math.round(to/tp*100)+' %':'—')+'</b></div>'+
@@ -1412,6 +1417,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
   if(dn===COLA.length)toast('Ya se envió: cambialo de nuevo desde el ejercicio');else toast('Deshecho');return;}
  if(a==='aj-nota'){var Hn=U.hoja,cN=porId(Hn.cid),xN=cN&&semana(cN).filter(function(z){return z.i===Hn.i;})[0];if(!xN)return;
   U.hoja={t:'anotar',cid:Hn.cid,i:Hn.i,iso:Hn.iso,dia:Hn.dia,e:Hn.e,n:1,rir:null,tags:[],txt:''};var SN=seriesDe(Hn.e);for(var qN=1;qN<=SN.length;qN++){if(!serLocal(Hn.cid,Hn.iso,Hn.e.nombre,qN)){U.hoja.n=qN;break;}if(qN===SN.length)U.hoja.n=SN.length;}hojaSerie(U.hoja);render();return;}
+ if(a==='vuelta'){var qv=d.v.split('|'),cv=porId(qv[0]);if(!cv)return;var n6=COLA.length;encolar(cv.id,{tipo:'vuelta',acc:qv[1],ts:Date.now()},[nom1(cv.nombre),'Volvió · '+(qv[1]==='reentrada'?'con reentrada':'donde quedó')],'vuelta|'+cv.id);render();toast(nom1(cv.nombre)+': volvió '+(qv[1]==='reentrada'?'con reentrada':'donde quedó'),COLA.slice(n6).map(function(q){return q.uid;}));return;}
  if(a==='hsem'){U.semH=+d.v;U.semAb=null;render();return;}
  if(a==='hser'){abrirCor(d.v);return;}
  if(a==='hest'){var qe=d.v.split('|'),cE2=porId(qe[0]);if(!cE2)return;var fE=fechaDe(new Date(+qe[1]),DS[+qe[2]]),wE=semanasCli(cE2).filter(function(x){return +x.lun===+qe[1];})[0],dE=wE&&wE.R.filter(function(x){return iDia(x.dia)===+qe[2];})[0];if(!dE)return;var n4=COLA.length;
