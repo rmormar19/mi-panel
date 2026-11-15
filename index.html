@@ -1092,7 +1092,10 @@ function hojaHTML(){var h=U.hoja;if(!h)return '';var s='';
    '<label class="l" for="hejn">'+(h.sg&&h.sg.length?'U otro':'Ejercicio')+'</label><input id="hejn" class="in" list="ejlist" autocomplete="off" placeholder="Ej.: Curl martillo" value="'+esc(h.nn||'')+'">'+listaEj()+
    '<div class="stp"><div><span class="l">Series</span><div class="stc"><button type="button" data-h="as|-1" aria-label="Una serie menos">−</button><b>'+h.ns+'</b><button type="button" data-h="as|1" aria-label="Una serie más">+</button></div></div>'+
    '<div><span class="l">Reps</span><div class="stc"><button type="button" data-h="ar|-1" aria-label="Una repetición menos">−</button><b>'+h.nr+'</b><button type="button" data-h="ar|1" aria-label="Una repetición más">+</button></div></div></div>'+
-   '<label class="l" for="hejpn">Peso</label><input id="hejpn" class="in" placeholder="Ej.: 10 kg o 4 placas" value="'+esc(h.np||'')+'">'+
+   (function(){var nmP=h.nn||'',grP=grEj(h.cid,nmP),famP=PESOS.familia(nmP,grP),uP=h.np?PESOS.uniDe(h.np,nmP,grP):(h.nu||(famP?'placas':'kg')),eqP=PESOS.equiv(h.np,nmP,grP);
+    /* 14 nov 2026 · como en el Monitor: kg, lb o placas, con la equivalencia; tocar otra unidad convierte el peso */
+    return '<span class="l">Peso</span><div class="stc ajp"><button type="button" data-h="ap|-1" aria-label="Bajar peso">−</button><input id="hejpn" class="jin" placeholder="Sin peso" autocomplete="off" aria-label="Peso" value="'+esc(h.np||'')+'"><button type="button" data-h="ap|1" aria-label="Subir peso">+</button></div>'+
+     '<div class="aju"><span class="eq" id="hejeq">'+esc(eqP||(famP?'Máquina: '+PESOS.stacks()[famP].et:''))+'</span><span class="uns" role="group" aria-label="Unidad">'+['kg','lb'].concat(famP?['placas']:[]).map(function(u){return '<button type="button" data-h="au|'+u+'" aria-pressed="'+(uP===u)+'">'+(u==='placas'?'Placas':u)+'</button>';}).join('')+'</span></div>';})()+
    '<button type="button" class="pri" style="margin-top:12px" data-act="g-agr">Agregar</button><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se manda solo al Monitor en unos segundos</p>';}
  if(h.t==='cardio'){var cC=porId(h.cid),sC=semana(cC),xC=sC.filter(function(z){return z.i===h.i;})[0],frz=(xC.d&&(xC.d.ejercicios||[]).filter(function(e){return e&&e.nombre;}).length)?xC.d:null;
   s='<h3>Solo cardio</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">'+esc(nom1(cC.nombre))+' · '+DS[h.i].toLowerCase()+' '+dm(xC.f)+'. Hizo cardio en vez de fuerza: el día cuenta como entrenado.</p>'+
@@ -1344,6 +1347,10 @@ async function enviarYActualizar(){if(U.leyendo||U.enviando)return;if(!navigator
  catch(e){U.leyendo=false;render();toast(e.message&&!/fetch|network|load/i.test(e.message)?e.message:'No se pudo enviar. Tus cambios siguen guardados.');}}
 
 /* ================= eventos ================= */
+/* 14 nov 2026 · al escribir el peso (o el ejercicio) en «Agregar ejercicio», la equivalencia kg / lb / placas se actualiza sola */
+document.addEventListener('change',function(ev){var t=ev.target;if(t&&t.id==='hejn'&&U.hoja&&U.hoja.t==='agregar'){U.hoja.nn=t.value;var hp=$('#hejpn');if(hp)U.hoja.np=hp.value;render();}});
+document.addEventListener('input',function(ev){var t=ev.target;if(!t||!U.hoja||U.hoja.t!=='agregar'||(t.id!=='hejpn'&&t.id!=='hejn'))return;var eq=$('#hejeq');if(!eq)return;
+ var nm=(($('#hejn')||{}).value||''),pv=(($('#hejpn')||{}).value||''),gr=grEj(U.hoja.cid,nm),fam=PESOS.familia(nm,gr);eq.textContent=PESOS.equiv(pv,nm,gr)||(fam?'Máquina: '+PESOS.stacks()[fam].et:'');});
 document.addEventListener('click',function(ev){var t=ev.target.closest('button,[data-go],[data-act]');if(!t)return;var d=t.dataset;
  if(d.go!=null){ir(d.go);return;}
  if(d.atras){if(history.length>1)history.back();else ir('');return;}
@@ -1392,6 +1399,10 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
     editarEj(H.cid,H.i,H.dia,'reemplazar',H.e.nombre,{nuevo:{nombre:nS2,peso:pesoPara(cS3,H.e,nS2)}});U.hoja=null;render();
     toast(H.e.nombre+' → '+nS2,COLA.slice(n1).map(function(q){return q.uid;}));return;}}
   if(H.t==='nuevoCli'){leerNuevoCli(H);if(ph[0]==='nt')H.tipo=ph[1];if(ph[0]==='nd'){var iD=H.dias.indexOf(ph[1]);if(iD>=0)H.dias.splice(iD,1);else H.dias.push(ph[1]);}H.err='';}
+  if(H.t==='agregar'&&(ph[0]==='ap'||ph[0]==='au')){var grQ=grEj(H.cid,H.nn||'');
+   if(ph[0]==='ap')H.np=pasoPeso(H.np||'',+ph[1],H.nn||'',grQ);
+   else if(!PESOS.num(H.np))H.nu=ph[1];
+   else{var cq=PESOS.convertir(H.np,ph[1],H.nn||'',grQ);if(cq==null)toast(ph[1]==='placas'?'No sé de qué máquina es: no lo puedo pasar a placas':'Ese peso no se puede convertir');else H.np=cq;}}
   if(H.t==='agregar'&&ph[0]==='asug'){var nA2=H.sg[+ph[1]],uA=nA2&&ultimoDe(porId(H.cid),nA2);if(nA2){H.nn=nA2;H.np=uA&&uA.peso?uA.peso:'';var rA=uA&&parseInt(uA.reps,10);if(rA>0)H.nr=rA;}}
   if(ph[0]==='ct')H.ct=ph[1];if(ph[0]==='mn'){H.mn=ph[1];var mi=$('#hmin');if(mi)mi.value='';}if(ph[0]==='ca')H.ca=+ph[1];if(ph[0]==='medio')H.medio=ph[1];if(ph[0]==='dia')H.dia=+ph[1];if(ph[0]==='wt')H.wt=ph[1];render();return;}
  if(d.pago){var Cp=cobros(),xp=Cp.L.filter(function(z){return z.id===d.pago;})[0];if(!xp)return;U.hoja={t:'pago',nid:xp.id,pid:(xp.c&&xp.c.id)||null,nombre:xp.nombre,mes:Cp.mes,monto:String(xp.cuota||''),medio:'Transferencia',dia:0};render();return;}
@@ -1449,12 +1460,12 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
   encolar(Hc.cid,{tipo:'soloCardio',dia:(xG.d&&xG.d.dia)||DS[xG.i],fechaDia:ymd(xG.f),ts:+xG.f+12*36e5,cardio:Hc.ct,min:mnG,a:xa?((xa.d&&xa.d.dia)||DS[xa.i]):'',ai:xa?xa.i:-1,fecha:hoyISO()},
    [nom1(cG.nombre)+' · '+DS[xG.i].toLowerCase()+' '+dm(xG.f),'Solo cardio · '+TN[Hc.ct]+' '+mnG+' min'+(tieneF?(xa?' · fuerza al '+DS[xa.i].toLowerCase():' · sin pasar la fuerza'):'')],kG);
   U.hoja=null;render();toast('Guardado en el celular');return;}
- if(a==='g-agr'){var Ha=U.hoja,nmA=(($('#hejn')||{}).value||'').trim(),pA=(($('#hejpn')||{}).value||'').trim();if(!nmA){toast('Escribí el nombre del ejercicio');return;}
+ if(a==='g-agr'){var Ha=U.hoja,nmA=(($('#hejn')||{}).value||'').trim(),pA=(($('#hejpn')||{}).value||'').trim();pA=PESOS.prolijo(pA,Ha.nu||PESOS.uniDe(pA,nmA,grEj(Ha.cid,nmA)));if(!nmA){toast('Escribí el nombre del ejercicio');return;}
   var cAg=porId(Ha.cid),xAg=semana(cAg).filter(function(z){return z.i===Ha.i;})[0],EA=(xAg.d.ejercicios||[]).filter(function(e){return e.nombre;});
   if(EA.some(function(e){return N(e.nombre)===N(nmA);})){toast('Ese ejercicio ya está en la sesión');return;}
   var ser=[];for(var q3=0;q3<Ha.ns;q3++)ser.push({reps:String(Ha.nr),peso:pA});
   var n5=COLA.length;editarEj(Ha.cid,Ha.i,Ha.dia,'agregar',EA.length?EA[EA.length-1].nombre:null,{nuevo:{nombre:nmA,series:ser}});U.hoja=null;render();toast('Agregado: '+nmA,COLA.slice(n5).map(function(q){return q.uid;}));return;}
- if(a==='g-camb'){var Hc2=U.hoja,nmC=(($('#hej')||{}).value||'').trim(),pC=(($('#hejp')||{}).value||'').trim();if(!nmC){toast('Escribí el ejercicio nuevo');return;}
+ if(a==='g-camb'){var Hc2=U.hoja,nmC=(($('#hej')||{}).value||'').trim(),pC=(($('#hejp')||{}).value||'').trim();pC=PESOS.prolijo(pC,PESOS.uniDe(pC,nmC,grEj(Hc2.cid,nmC)));if(!nmC){toast('Escribí el ejercicio nuevo');return;}
   if(N(nmC)===N(Hc2.e.nombre)){toast('Es el mismo ejercicio');return;}
   var n3=COLA.length;editarEj(Hc2.cid,Hc2.i,Hc2.dia,'reemplazar',Hc2.e.nombre,{nuevo:{nombre:nmC,peso:pC}});U.hoja=null;render();toast(Hc2.e.nombre+' → '+nmC,COLA.slice(n3).map(function(q){return q.uid;}));return;}
  if(a==='ej-quit'){var Hq=U.hoja;if(!Hq.quitar){Hq.quitar=true;render();setTimeout(function(){if(U.hoja===Hq&&Hq.quitar){Hq.quitar=false;render();}},5000);return;}
