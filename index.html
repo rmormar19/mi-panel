@@ -354,6 +354,8 @@ div.row .tx b{white-space:normal}
 .jin.cam,.stc b.cam{color:var(--a1)}
 /* 12 nov 2026 · todas las series en un renglón, del mismo ancho */
 .vuel{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;margin:0 0 10px}.vuel span{font-size:13px;color:var(--tx3);font-weight:600}.vuel .sec{min-height:38px;font-size:13px;padding:0 8px}
+.semnav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;margin:0 0 6px}.semnav span{text-align:center}.semnav b{display:block;font:800 17px var(--d)}.semnav small{font-size:12.5px;color:var(--tx3)}
+.semnav button{height:44px;border-radius:13px;border:1px solid var(--line);background:var(--surf2);color:var(--tx);font:700 22px var(--d)}.semnav button:disabled{opacity:.35}
 .semch{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin:0 -2px;scrollbar-width:none}.semch::-webkit-scrollbar{display:none}
 .semch button{flex:none;min-height:34px;padding:0 13px;border-radius:99px;border:1px solid var(--line);background:var(--surf2);color:var(--tx2);font:600 13px var(--d)}.semch button[aria-pressed="true"]{border-color:var(--a1);color:var(--a1);box-shadow:0 0 0 1px var(--a1) inset}
 .semres{margin:0 4px 8px;font-size:12.5px;color:var(--tx3)}
@@ -605,23 +607,25 @@ V.clientes=function(){var L=CL(),q=N(U.q),F={act:function(c){return !ausente(c);
   '<div class="card" id="lista">'+(vis.map(function(c){var e=c.estado&&ESTADO[c.estado.e],obj=(c.datos||{}).objetivos||'';return filaCli(c,(e&&c.estado.e!=='activo'?'<span class="'+e[1]+'">'+e[0]+'</span> · ':'')+esc(txtObj(obj)||'Sin objetivo cargado'),pagoDe(c)+dots(c));}).join('')||'<div class="vacio">Nadie con ese nombre.</div>')+'</div>'+(vis.length&&!q?'<div class="lg2 pt"><span><i class="ok"></i>Hecho</span><span><i class="fa"></i>Faltó</span><span><i class="sm"></i>Sin marcar</span><span><i class="hoy"></i>Hoy</span><span><i class="pl"></i>Planificado</span></div>':'');};
 
 V.c=function(id,tab){var c=porId(id);if(!c)return cab('No encontrado')+'<div class="vacio">Ese cliente ya no está en los datos guardados.</div>';
- tab=tab||U.tab[id]||'semana';var d=c.datos||{},sm=semana(c),pl=sm.filter(function(x){return x.e!=='de'&&x.e!=='li';}),hechas=pl.filter(function(x){return x.e==='ok';}).length;
+ tab=tab||U.tab[id]||'rutina';var d=c.datos||{},sm=semana(c),pl=sm.filter(function(x){return x.e!=='de'&&x.e!=='li';}),hechas=pl.filter(function(x){return x.e==='ok';}).length;
  var W=semanas(c),tp=0,to=0;W.forEach(function(w){if(!w.act){tp+=w.plan;to+=w.ok;}});
  var cb=cobros(),pg=(cb.L||[]).filter(function(z){return z.c&&z.c.id===c.id;})[0],e=c.estado&&ESTADO[c.estado.e];
  var vh=ausente(c)?viajeHasta(c):null;
  var s=cab(esc(c.nombre),(e?'<span class="'+e[1]+'">'+(c.estado.e==='viaje'?'✈ ':'')+e[0]+(vh?' hasta el '+dm(vh):'')+'</span> · ':'')+esc(txtObj(d.objetivos)||'Sin objetivo'));
- if(c.estado&&c.estado.txt&&c.estado.e!=='activo'&&!vh)s+='<div class="aviso az">'+esc(c.estado.txt)+'</div>';
+ /* 14 nov 2026 · el texto del estado sólo mientras está de viaje o en pausa (no el «Retoma…» una vez decidido) */
+ if(c.estado&&c.estado.txt&&/^(viaje|pausa|ausente)$/.test(c.estado.e)&&!vh)s+='<div class="aviso az">'+esc(c.estado.txt)+'</div>';
  /* 14 nov 2026 · volvió de un viaje o una pausa: con reentrada (bloque nuevo desde esta semana) o donde quedó. Lo aplica el Monitor. */
  var vu=buscaK('vuelta|'+c.id);
- if(vu)s+='<div class="aviso az">↩ Volvió '+(vu.x.d.acc==='reentrada'?'con reentrada':'donde quedó')+(vu.pend?' · se manda en unos segundos':' · enviado al Monitor')+'</div>';
- else if(c.estado&&/^(viaje|pausa|ausente|retoma)$/.test(c.estado.e))s+='<div class="vuel"><span>'+(c.estado.e==='retoma'?'¿Cómo retoma?':'¿Ya volvió?')+'</span><button type="button" class="sec" data-act="vuelta" data-v="'+esc(c.id)+'|reentrada">↩ Con reentrada</button><button type="button" class="sec" data-act="vuelta" data-v="'+esc(c.id)+'|retoma">↩ Donde quedó</button></div>';
+ var decidido=vu||(c.estado&&c.estado.e==='retoma'&&/^\s*retoma:\s*(con reentrada|donde qued)/i.test(String(c.estado.txt||'')));
+ if(!decidido&&c.estado&&/^(viaje|pausa|ausente|retoma)$/.test(c.estado.e))s+='<div class="vuel"><span>'+(c.estado.e==='retoma'?'¿Cómo retoma?':'¿Ya volvió?')+'</span><button type="button" class="sec" data-act="vuelta" data-v="'+esc(c.id)+'|reentrada">↩ Con reentrada</button><button type="button" class="sec" data-act="vuelta" data-v="'+esc(c.id)+'|retoma">↩ Donde quedó</button></div>';
  var gymC=cb.gym&&cb.gym.some(function(g){return panelDe(g)===c;});
  s+='<div class="strip"><div><span>Semana</span><b class="num">'+(pl.length?hechas+'/'+pl.length:'—')+'</b></div>'+
   '<div><span>Cumplimiento</span><b class="num">'+(tp?Math.round(to/tp*100)+' %':'—')+'</b></div>'+
   '<div><span>'+cap1(MES[new Date().getMonth()])+'</span><b class="'+(pg?pg.pago?'ok':'wa':'')+'">'+(pg?pg.pago?'Pagó':'Debe':gymC?'Gimnasio':'—')+'</b></div>'+
   '<div title="'+esc(c.fase?(c.fase.f||'')+(c.fase.sem?' · semana '+c.fase.sem:'')+(c.fase.rir?' · '+c.fase.rir:''):'')+'"><span>Fase</span><b>'+esc(c.fase&&c.fase.f?String(c.fase.f).replace(/^ventana de /i,'').replace(/^./,function(x){return x.toUpperCase();}):'—')+'</b></div></div>';
  if(tab==='notas')tab='datos';   /* links viejos a pestañas que ya no están */
- var T=[['semana','Semana'],['rutina','Rutina'],['progreso','Progreso'],['dieta','Dieta'],['medidas','Antropometría'],['datos','Datos']];
+ if(tab==='semana')tab='rutina';   /* 14 nov 2026: Semana y Rutina van juntas en «Rutina semanal» */
+ var T=[['datos','Datos'],['rutina','Rutina semanal'],['progreso','Progreso'],['medidas','Antropometría'],['dieta','Dieta']];
  s+='<div class="tabs" role="group" aria-label="Secciones de la ficha">'+T.map(function(t){return '<button type="button" data-tab="'+id+'|'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>';}).join('')+'</div>';
  var vj=function(x){return ausente(c)&&!tiene(x.d)&&x.e!=='li'&&!cardioSolo(x.d)&&enPauta(c,x.i)&&(!vh||+x.f<=+vh);};
  if(tab==='semana'){s+='<div class="card">'+sm.map(function(x){var h=horaDe(c,x.i),fila='<span class="hr num" style="font-size:13px;color:var(--tx3);min-width:46px">'+D3[x.i]+' '+x.f.getDate()+'</span><span class="tx"><b'+(vj(x)?' class="bl"':'')+'>'+(tiene(x.d)?esc(gTxt(x.d.grupo)):x.e==='li'?'Libre':cardioSolo(x.d)?'Cardio por su cuenta':vj(x)?(c.estado.e==='viaje'?'De viaje':'En pausa'):'Descanso')+'</b><small>'+(vj(x)?'no cuenta como falta':'')+(cardioSolo(x.d)?esc(x.d.cardio.filter(function(z){return z&&z.tipo;}).map(cardioTx).join(' · ')):'')+(tiene(x.d)?(h?h+' h · ':'')+(x.d.ejercicios||[]).filter(function(e){return e.nombre;}).length+' ejercicios'+(x.d.esfuerzo?' · esfuerzo '+esc(x.d.esfuerzo):''):'')+'</small></span>'+(vj(x)?'<span class="chip vj">'+(c.estado.e==='viaje'?'Viaje':'Pausa')+'</span>':x.e!=='de'?'<span class="chip '+ESCH[x.e]+'">'+(x.e==='li'&&!tiene(x.d)?'Libre':ESTX[x.e])+'</span>':'');return filaDia(c,id,x,fila);}).join('')+'</div>';
@@ -695,11 +699,12 @@ function serieVista(cid,iso,e,n){var z=seriesDe(e)[n-1]||{},r=buscaK(corK(cid,is
 function semLbl(w){var f=w.lun;return w.act?'Esta semana':f.getDate()+'/'+(f.getMonth()+1);}
 function kgTop(e,c){var b=null;seriesDe(e||{}).forEach(function(s){if(s.tipo==='aprox')return;var k=PESOS.aKg(s.peso,e.nombre,grEj(c.id,e.nombre));if(k!=null&&(b==null||k>b))b=k;});return b;}
 function rutinaHTML(c){var W=semanasCli(c),wi=0;W.forEach(function(w,k){if(+w.lun===+U.semH)wi=k;});var w=W[wi],prev=W[wi+1];
- var s='<div class="semch" role="group" aria-label="Semana">'+W.slice(0,30).map(function(x,k){return '<button type="button" data-act="hsem" data-v="'+(+x.lun)+'" aria-pressed="'+(k===wi)+'">'+semLbl(x)+'</button>';}).join('')+'</div>';
+ var fin=new Date(+w.lun+6*864e5),rg=w.lun.getDate()+'/'+(w.lun.getMonth()+1)+' al '+fin.getDate()+'/'+(fin.getMonth()+1);
+ var s='<div class="semnav"><button type="button" data-act="hsem" data-v="'+(W[wi+1]?+W[wi+1].lun:'')+'"'+(W[wi+1]?'':' disabled')+' aria-label="Semana anterior">‹</button><span><b>'+(w.act?'Esta semana':'Semana del '+w.lun.getDate()+'/'+(w.lun.getMonth()+1))+'</b><small>'+rg+'</small></span><button type="button" data-act="hsem" data-v="'+(wi>0?+W[wi-1].lun:'')+'"'+(wi>0?'':' disabled')+' aria-label="Semana siguiente">›</button></div>';
  var dias=[1,2,3,4,5,6,0].map(function(i){var d=w.R.filter(function(x){return iDia(x.dia)===i;})[0],f=fechaDe(w.lun,DS[i]),e=est(d,f),lo=tiene(d)?estLocal(c.id,ymd(f)):null;if(lo)e=lo.v==='verde'?'ok':lo.v==='rojo'?'fa':'li';return {i:i,d:d,f:f,e:e,lo:lo};}).filter(function(x){return tiene(x.d);});
- if(!dias.length)return s+'<div class="card"><div class="vacio">'+(w.act?'Esta semana no tiene rutina cargada.':'Esa semana no tiene rutina guardada.')+'</div></div>';
+ if(!dias.length)return s+'<div class="card"><div class="vacio">'+(w.act?'Esta semana no tiene rutina cargada.':'Esa semana no tiene rutina guardada.')+'</div></div>'+'<div class="sh"><h2>Últimas semanas</h2><span>hechas / planificadas</span></div><div class="card">'+barrasSem(semanas(c))+'</div>';
  var hechos=dias.filter(function(x){return x.e==='ok';}).length;
- s+='<p class="semres">'+(w.act?'Semana actual':'Semana del '+w.lun.getDate()+'/'+(w.lun.getMonth()+1))+' · '+hechos+' de '+dias.length+' días hechos'+(prev?' · comparado con la del '+prev.lun.getDate()+'/'+(prev.lun.getMonth()+1):'')+'</p>';
+ s+='<p class="semres">'+hechos+' de '+dias.length+' días hechos'+(prev?' · comparado con la del '+prev.lun.getDate()+'/'+(prev.lun.getMonth()+1):'')+'</p>';
  return s+'<div class="card">'+dias.map(function(x){var iso=ymd(x.f),k='h|'+c.id+'|'+iso,E=(x.d.ejercicios||[]).filter(function(e){return e&&e.nombre;});
   return '<details class="dia hsd" data-ab="'+esc(k)+'"'+(U.semAb===k?' open':'')+'><summary><span class="tx"><b>'+DS[x.i]+' '+x.f.getDate()+' · '+esc(gTxt(x.d.grupo))+'</b><small>'+E.length+' ejercicios'+(x.lo&&x.lo.pend?' · cambio sin mandar':'')+'</small></span><span class="chip '+ESCH[x.e]+'">'+ESTX[x.e]+'</span></summary>'+
    (+x.f<=+hoy0()?'<div class="hde"><button type="button" class="sec'+(x.e==='ok'?' on':'')+'" data-act="hest" data-v="'+esc(c.id)+'|'+(+w.lun)+'|'+x.i+'|verde">✓ Hecho</button><button type="button" class="sec'+(x.e==='fa'?' on fa':'')+'" data-act="hest" data-v="'+esc(c.id)+'|'+(+w.lun)+'|'+x.i+'|rojo">✕ Faltó</button></div>':'')+
@@ -707,7 +712,8 @@ function rutinaHTML(c){var W=semanasCli(c),wi=0;W.forEach(function(w,k){if(+w.lu
     var a=pe?kgTop(pe,c):null,h=kgTop(e,c),dl=a!=null&&h!=null?Math.round((h-a)*10)/10:null;
     return '<div class="ej hej"><b>'+esc(acentos(e.nombre))+'</b>'+(dl!=null?'<small class="'+(dl>0?'ok':dl<0?'wa':'muted')+'">'+(dl>0?'▲ +'+PESOS.fmt(dl)+' kg':dl<0?'▼ '+PESOS.fmt(dl)+' kg':'= igual')+'</small>':pe?'':'<small class="muted">nuevo</small>')+
      '<div class="s">'+seriesDe(e).map(function(_,q){var v=serieVista(c.id,iso,e,q+1),z=v.s,tg={aprox:'Ap',rp:'RP',fallo:'F',neg:'N',cluster:'C'}[z.tipo]||(z.drops&&z.drops.length?'D':'');
-      return '<button type="button" class="hs'+(v.cor?' cor':'')+(x.e==='ok'?' h':'')+'" data-act="hser" data-v="'+esc(c.id)+'|'+(+w.lun)+'|'+x.i+'|'+ei+'|'+(q+1)+'">'+(tg?'<i>'+tg+'</i>':'')+esc(z.peso||'—')+' × '+esc(PESOS.repsRota(z.reps)?'—':(z.reps||'—'))+(z.rir!==''&&z.rir!=null?' · RIR '+esc(z.rir):'')+esc(dropTx(z))+'</button>';}).join('')+'</div></div>';}).join('')+'</details>';}).join('')+'</div><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Tocá una serie para corregir peso, reps o RIR. Llega al Monitor y a la app del cliente.</p>';}
+      return '<button type="button" class="hs'+(v.cor?' cor':'')+(x.e==='ok'?' h':'')+'" data-act="hser" data-v="'+esc(c.id)+'|'+(+w.lun)+'|'+x.i+'|'+ei+'|'+(q+1)+'">'+(tg?'<i>'+tg+'</i>':'')+esc(z.peso||'—')+' × '+esc(PESOS.repsRota(z.reps)?'—':(z.reps||'—'))+(z.rir!==''&&z.rir!=null?' · RIR '+esc(z.rir):'')+esc(dropTx(z))+'</button>';}).join('')+'</div></div>';}).join('')+'</details>';}).join('')+'</div><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Tocá una serie para corregir peso, reps o RIR. Llega al Monitor y a la app del cliente.</p>'+
+  '<div class="sh"><h2>Últimas semanas</h2><span>hechas / planificadas</span></div><div class="card">'+barrasSem(semanas(c))+'</div>';}
 /* la hoja para corregir una serie ya hecha */
 function corDatos(H){var c=porId(H.cid),w=c&&semanasCli(c).filter(function(x){return +x.lun===H.lun;})[0],d=w&&w.R.filter(function(x){return iDia(x.dia)===H.i;})[0],e=d&&(d.ejercicios||[]).filter(function(z){return z&&z.nombre;})[H.ei];return e?{c:c,w:w,d:d,e:e,f:fechaDe(w.lun,DS[H.i])}:null;}
 function abrirCor(v){var q=v.split('|'),H={t:'cor',cid:q[0],lun:+q[1],i:+q[2],ei:+q[3],n:+q[4]},X=corDatos(H);if(!X)return;var s=serieVista(H.cid,ymd(X.f),X.e,H.n).s;H.pv=s.peso||'';H.rv=PESOS.repsRota(s.reps)?'':(s.reps||'');H.rir=s.rir!=null&&s.rir!==''?String(s.rir):null;H.p0=H.pv;H.r0=H.rv;H.i0=H.rir;U.hoja=H;render();}
@@ -1287,7 +1293,7 @@ V.c=function(id,tab){var s=Vc0(id,tab),c=porId(id);if(!c)return s;
   [['verde','Hecho','ok'],['rojo','Faltó','fa'],['libre','No viene','li']].map(function(o){return '<button type="button" data-est="'+esc(id)+'|'+hx.i+'|'+o[0]+'" aria-pressed="'+(hx.e===o[2])+'" class="'+o[2]+'">'+(hx.e===o[2]?'✓ ':'')+o[1]+'</button>';}).join('')+'</div>'+
   (!c.regionesEj?'':'<button type="button" class="scb'+(hx.local&&hx.local.sc||hx.d.soloCardio?' on':'')+'" data-sc="'+esc(id)+'|'+hx.i+'">'+(hx.local&&hx.local.sc||hx.d.soloCardio?'✓ ':'')+'🏃 Hizo solo cardio</button>')+
   (hx.local&&hx.local.pend?'<p class="muted" style="font-size:12.5px;margin:8px 0 0">Guardado en el celular · se manda solo al Monitor en unos segundos.</p>':'')+'</div>';
- var i=s.indexOf('<div class="strip"');if(i<0)return s;var j=s.indexOf('<div class="tabs"',i);return s.slice(0,i)+acc+s.slice(i,j)+hoyC+s.slice(j);};
+ var i=s.indexOf('<div class="strip"');if(i<0)return s;var j=s.indexOf('<div class="tabs"',i);return s.slice(0,i)+s.slice(i,j)+hoyC+s.slice(j);};   /* 14 nov 2026: sin la fila de botones (Ricky) */
 
 
 /* ================= navegación ================= */
@@ -1429,7 +1435,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
  if(a==='aj-nota'){var Hn=U.hoja,cN=porId(Hn.cid),xN=cN&&semana(cN).filter(function(z){return z.i===Hn.i;})[0];if(!xN)return;
   U.hoja={t:'anotar',cid:Hn.cid,i:Hn.i,iso:Hn.iso,dia:Hn.dia,e:Hn.e,n:1,rir:null,tags:[],txt:''};var SN=seriesDe(Hn.e);for(var qN=1;qN<=SN.length;qN++){if(!serLocal(Hn.cid,Hn.iso,Hn.e.nombre,qN)){U.hoja.n=qN;break;}if(qN===SN.length)U.hoja.n=SN.length;}hojaSerie(U.hoja);render();return;}
  if(a==='vuelta'){var qv=d.v.split('|'),cv=porId(qv[0]);if(!cv)return;var n6=COLA.length;encolar(cv.id,{tipo:'vuelta',acc:qv[1],ts:Date.now()},[nom1(cv.nombre),'Volvió · '+(qv[1]==='reentrada'?'con reentrada':'donde quedó')],'vuelta|'+cv.id);render();toast(nom1(cv.nombre)+': volvió '+(qv[1]==='reentrada'?'con reentrada':'donde quedó'),COLA.slice(n6).map(function(q){return q.uid;}));return;}
- if(a==='hsem'){U.semH=+d.v;U.semAb=null;render();return;}
+ if(a==='hsem'){if(!d.v)return;U.semH=+d.v;U.semAb=null;render();return;}
  if(a==='hser'){abrirCor(d.v);return;}
  if(a==='hest'){var qe=d.v.split('|'),cE2=porId(qe[0]);if(!cE2)return;var fE=fechaDe(new Date(+qe[1]),DS[+qe[2]]),wE=semanasCli(cE2).filter(function(x){return +x.lun===+qe[1];})[0],dE=wE&&wE.R.filter(function(x){return iDia(x.dia)===+qe[2];})[0];if(!dE)return;var n4=COLA.length;
   encolar(cE2.id,{tipo:'sesion',dia:dE.dia,estado:qe[3],profe:true,corr:true,ts:+fE+12*36e5,fechaDia:ymd(fE)},[nom1(cE2.nombre)+' · '+DS[+qe[2]].toLowerCase()+' '+dm(fE),qe[3]==='verde'?'Sesión hecha':'Faltó'],'est|'+cE2.id+'|'+ymd(fE));
