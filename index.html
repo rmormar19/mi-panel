@@ -565,7 +565,7 @@ function cobros(mes){var n=NEG();mes=mes||ym(new Date());
  if(!n){var L=CL().map(function(c){return {nombre:c.nombre,c:c,cuota:null,pago:D.mesPagos===mes&&c.pago?{origen:'panel'}:null};});return {sin:true,mes:mes,L:L,cobrado:0,total:0,pend:L.filter(function(x){return !x.pago;})};}
  var esGym=function(x){return x.tipo==='gimnasio'||x.cobra===false;};
  var vivo=function(x){var p=panelDe(x);return x.estado!=='Baja'&&!x.bajaFecha&&(x.inicio||'').slice(0,7)<=mes&&!(p&&(p.baja||(p.estado&&p.estado.e==='baja')));};
- var L=n.cli.filter(function(x){return vivo(x)&&!esGym(x);}).map(function(x){var p=panelDe(x),pg=n.pagos.filter(function(z){return z.cliente===x.id&&z.mes===mes;})[0]||pagoLocal(x.id,mes)||(p&&D.mesPagos===mes&&p.pago?{origen:'panel'}:null);
+ var L=n.cli.filter(function(x){return vivo(x)&&!esGym(x);}).map(function(x){var p=panelDe(x),pg=deshecho(x.id,mes)?null:(n.pagos.filter(function(z){return z.cliente===x.id&&z.mes===mes;})[0]||pagoLocal(x.id,mes)||(p&&D.mesPagos===mes&&p.pago?{origen:'panel'}:null));
    return {id:x.id,nombre:(p&&p.nombre)||x.nombre,c:p,cuota:+x.cuota||0,online:x.tipo==='online',viaje:p&&p.estado&&p.estado.e==='viaje',pago:pg,monto:pg?(pg.monto!=null?+pg.monto:+x.cuota||0):0};})
   .sort(function(a,b){return (!!a.pago-!!b.pago)||b.cuota-a.cuota;});
  var gym=n.cli.filter(function(x){return vivo(x)&&esGym(x);}),sueldo=+n.cfg.sueldoGimnasio||0,gp=n.pagos.filter(function(z){return z.cliente==='gimnasio'&&z.mes===mes;})[0]||null;
@@ -772,7 +772,7 @@ V.cobros=function(){var C=cobros(),m=new Date();var s=cab('Cobros',MES[m.getMont
   '<div class="bar"><i style="width:'+(pc*100).toFixed(1)+'%;background:var(--grn)"></i></div><div style="display:flex;justify-content:space-between;font-size:12.5px"><span class="ok">'+Math.round(pc*100)+' % cobrado</span><span class="wa">'+usd(C.total-C.cobrado)+' por cobrar</span></div></div>';
  if(C.pend.length)s+='<div class="sh"><h2>Por cobrar</h2><span>'+C.pend.length+'</span></div><div class="card">'+C.pend.map(function(x){return '<div class="row"><span class="ini" style="background:'+col(x.nombre)+'">'+esc(ini(x.nombre))+'</span><span class="tx"><b>'+esc(x.nombre)+'</b><small>'+(x.online?'Online · ':'')+(x.viaje?'de viaje':'cuota del mes')+' · '+usd(x.cuota)+'</small></span><button type="button" class="marcar" data-pago="'+esc(x.id)+'">Marcar</button></div>';}).join('')+'</div>';
  var ok=C.L.filter(function(x){return x.pago;});
- s+='<div class="sh"><h2>Pagaron</h2><span>'+ok.length+'</span></div><div class="card">'+(ok.map(function(x){var p=x.pago;return filaCli(x.c||{id:'',nombre:x.nombre},p.origen==='celular'?(p.pend?'guardado en el celular · sin enviar':'enviado desde el celular'):p.origen==='panel'||p.origen==='monitor'?'marcado en el Monitor':(p.fecha?p.fecha.split('-').reverse().slice(0,2).join('/'):'')+(p.medio?' · '+esc(p.medio.toLowerCase()):''),'<span class="chip ok num">'+usd(x.monto)+'</span>');}).join('')||'<div class="vacio">Nadie pagó todavía este mes.</div>')+
+ s+='<div class="sh"><h2>Pagaron</h2><span>'+ok.length+'</span></div><div class="card">'+(ok.map(function(x){var p=x.pago;return filaCli(x.c||{id:'',nombre:x.nombre},p.origen==='celular'?(p.pend?'guardado en el celular · sin enviar':'enviado desde el celular'):p.origen==='panel'||p.origen==='monitor'?'marcado en el Monitor':(p.fecha?p.fecha.split('-').reverse().slice(0,2).join('/'):'')+(p.medio?' · '+esc(p.medio.toLowerCase()):''),'<span class="chip ok num">'+usd(x.monto)+'</span>').replace(/data-go="[^"]*"/,'data-pagado="'+esc(x.id)+'"');}).join('')||'<div class="vacio">Nadie pagó todavía este mes.</div>')+
   (C.sueldo?'<div class="row"><span class="ini" style="background:var(--a1)">GYM</span><span class="tx"><b>Sueldo del gimnasio</b><small>'+(C.gp?'cobrado'+(C.gp.fecha?' el '+C.gp.fecha.split('-').reverse().slice(0,2).join('/'):''):'pendiente')+'</small></span><span class="chip '+(C.gp?'ok':'wa')+' num">'+usd(C.sueldo)+'</span></div>':'')+'</div>';
  if(C.gym.length)s+='<p class="muted" style="font-size:12.5px;margin:12px 4px">Del gimnasio (los cubre tu sueldo): '+C.gym.map(function(g){return esc(nom1(g.nombre));}).join(', ')+'.</p>';
  if(r)s+='<p class="muted" style="font-size:12.5px;margin:4px 4px">Dólar '+(C.cot.fuente==='BROU'?'BROU ':'')+'compra $U '+nf1.format(r)+(C.cot.fecha?' · '+C.cot.fecha.split('-').reverse().slice(0,2).join('/'):'')+'.</p>';
@@ -881,12 +881,14 @@ function marcarSerie(c,xs,e,n,sv){var iso=ymd(xs.f),z=seriesDe(e)[n-1]||{},cambi
 function estLocal(cid,iso){var r=buscaK('est|'+cid+'|'+iso);if(!r)return estApp(cid,iso);var d=r.x.d;return {v:d.tipo==='libre'?'libre':d.tipo==='soloCardio'?'verde':d.estado,pend:r.pend,sc:d.tipo==='soloCardio',auto:!!d.auto};}
 /* 12 nov 2026 · lo que el cliente marcó en su app y el Monitor todavía no aplicó (lo manda el puente aparte) */
 function estApp(cid,iso){var L=(D&&D.app&&D.app[cid])||[],x=null;for(var i=0;i<L.length;i++)if(L[i].iso===iso)x=L[i];if(!x||!x.estado)return null;return {v:x.estado,pend:false,app:true};}
-function pagoLocal(nid,mes){var r=buscaK('pago|'+nid+'|'+mes);if(!r)return null;var d=r.x.d;return {fecha:d.fecha,medio:d.medio,monto:d.monto,origen:'celular',pend:r.pend};}
+/* 15 nov 2026 · «Deshacer pago» desde Mi panel: el borrado queda en la cola con la misma clave que el pago */
+function deshecho(nid,mes){var r=buscaK('pago|'+nid+'|'+mes);return !!(r&&r.x.d.borrar);}
+function pagoLocal(nid,mes){var r=buscaK('pago|'+nid+'|'+mes);if(!r||r.x.d.borrar)return null;var d=r.x.d;return {fecha:d.fecha,medio:d.medio,monto:d.monto,origen:'celular',pend:r.pend};}
 /* 15 nov 2026 · Ricky: «cuando un cliente me paga, que se refleje automáticamente en Mi negocio». «Pagó» tildado en el Monitor
    (mes en curso) y sin pago en Mi negocio: se manda una vez el pago real (su cuota, hoy, origen 'monitor'), así queda aunque
    Mi negocio no esté abierto. Destildado: se borra, pero sólo el que puso esto (el puente no toca lo cargado a mano). */
 function sincPagosMon(){var n=NEG();if(!n||!D||!D.mesPagos)return;var mes=D.mesPagos;
- n.cli.forEach(function(x){if(x.tipo==='gimnasio'||x.cobra===false)return;var p=panelDe(x);if(!p)return;
+ n.cli.forEach(function(x){if(x.tipo==='gimnasio'||x.cobra===false)return;var p=panelDe(x);if(!p||deshecho(x.id,mes))return;
   var doc=n.pagos.filter(function(z){return z.cliente===x.id&&z.mes===mes;})[0],k='pagoMon|'+x.id+'|'+mes,r=buscaK(k),quiere=p.pago?(doc||pagoLocal(x.id,mes)?null:'crear'):(doc&&doc.origen==='monitor'?'borrar':null);
   if(!quiere){if(r&&r.pend){COLA=COLA.filter(function(q){return q.k!==k;});guarda(K_COLA,COLA);}return;}
   if(r&&(!!r.x.d.borrar)===(quiere==='borrar'))return;
@@ -899,6 +901,7 @@ function limpiarEnviados(){ENVI=ENVI.filter(function(x){if(Date.now()-(x.env||x.
   if(x.d.tipo==='altaCliente')return !porId(x.cid)&&Date.now()-(x.env||x.t)<7*864e5;
   if(x.d.tipo==='bajaCliente'){var cb2=porId(x.cid);return !!cb2&&!cb2.baja&&Date.now()-(x.env||x.t)<7*864e5;}
   if(x.k&&x.k.indexOf('pagoMon|')===0){var nM=NEG(),cM=porId(x.cid),hay=!!(nM&&nM.pagos.some(function(p){return p.cliente===x.d.cliente&&p.mes===x.d.mes;})),tilde=!!(cM&&cM.pago&&D.mesPagos===x.d.mes);return x.d.borrar?hay&&!tilde:!hay&&tilde;}
+  if(x.d.tipo==='pago'&&x.d.borrar){var nB=NEG(),cB=porId(x.cid);return !!(nB&&nB.pagos.some(function(p){return p.cliente===x.d.cliente&&p.mes===x.d.mes;}))||!!(cB&&cB.pago&&D.mesPagos===x.d.mes);}
   if(x.d.tipo==='pago'){var n=NEG();return !(n&&n.pagos.some(function(p){return p.cliente===x.d.cliente&&p.mes===x.d.mes;}));}
   if(x.k&&x.k.indexOf('est|')===0){var c=porId(x.cid);if(!c)return false;var iso=x.k.split('|')[2],dd=(c.rutina||[]).filter(function(z){return iDia(z.dia)===iDia(x.d.dia);})[0];
    if(!dd||+lunDatos()!==+lunesCal(new Date(iso+'T12:00')))return true;var want=x.d.tipo==='libre'?'libre':x.d.estado;return !(want==='libre'?dd.libre:dd.estado===want);}
@@ -1148,6 +1151,10 @@ function hojaHTML(){var h=U.hoja;if(!h)return '';var s='';
    '<label class="l">Medio</label><div class="qn">'+['Transferencia','Efectivo','Mercado Pago'].map(function(m){return '<button type="button" data-h="medio|'+m+'" aria-pressed="'+(h.medio===m)+'">'+m+'</button>';}).join('')+'</div>'+
    '<label class="l">Fecha</label><div class="qn">'+[[0,'Hoy '+dm(new Date())],[1,'Ayer']].map(function(f){return '<button type="button" data-h="dia|'+f[0]+'" aria-pressed="'+(h.dia===f[0])+'">'+f[1]+'</button>';}).join('')+'</div>'+
    '<button type="button" class="pri" style="margin-top:16px" data-act="g-pago">Marcar cobrado</button><p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se manda solo a Mi negocio en unos segundos</p>';}
+ if(h.t==='pagado'){var fP=h.fecha?h.fecha.split('-').reverse().slice(0,2).join('/'):'';
+  s='<h3>Pago de '+esc(nom1(h.nombre))+'</h3><p class="muted" style="margin:2px 0 12px;font-size:13px">Cuota de '+MES[+h.mes.slice(5)-1]+' · '+usd(h.monto)+(fP?' · '+fP:'')+(h.medio?' · '+esc(h.medio.toLowerCase()):'')+(h.origen==='panel'||h.origen==='monitor'?' · marcado en el Monitor':h.origen==='celular'?' · desde el celular':'')+'</p>'+
+   '<button type="button" class="sec" style="margin-top:4px" data-act="d-pago">Deshacer pago</button>'+(h.pid?'<button type="button" class="sec" style="margin-top:8px" data-act="v-ficha">Ver ficha</button>':'')+
+   '<p class="muted" style="font-size:12px;text-align:center;margin:8px 0 0">Se borra de Mi negocio y se destilda «Pagó» en el Monitor</p>';}
  if(h.t==='wa'){var c2=porId(h.cid);
   s='<h3>Enviar por WhatsApp</h3><div class="qn" style="margin:10px 0 12px">'+[['ses','Rutina de '+(proxSesion(c2)?DS[proxSesion(c2).i].toLowerCase():'hoy')],['sem','Resumen de la semana']].map(function(o){return '<button type="button" data-h="wt|'+o[0]+'" aria-pressed="'+(h.wt===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>'+
    '<textarea id="watxt" class="wab" style="min-height:220px">'+esc(h.wt==='sem'?textoSemana(c2):textoRutina(c2))+'</textarea>'+
@@ -1446,6 +1453,7 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
    else{var cq=PESOS.convertir(H.np,ph[1],H.nn||'',grQ);if(cq==null)toast(ph[1]==='placas'?'No sé de qué máquina es: no lo puedo pasar a placas':'Ese peso no se puede convertir');else H.np=cq;}}
   if(H.t==='agregar'&&ph[0]==='asug'){var nA2=H.sg[+ph[1]],uA=nA2&&ultimoDe(porId(H.cid),nA2);if(nA2){H.nn=nA2;H.np=uA&&uA.peso?uA.peso:'';var rA=uA&&parseInt(uA.reps,10);if(rA>0)H.nr=rA;}}
   if(ph[0]==='ct')H.ct=ph[1];if(ph[0]==='mn'){H.mn=ph[1];var mi=$('#hmin');if(mi)mi.value='';}if(ph[0]==='ca')H.ca=+ph[1];if(ph[0]==='medio')H.medio=ph[1];if(ph[0]==='dia')H.dia=+ph[1];if(ph[0]==='wt')H.wt=ph[1];render();return;}
+ if(d.pagado){var Cq=cobros(),xq=Cq.L.filter(function(z){return z.id===d.pagado;})[0];if(!xq||!xq.pago)return;U.hoja={t:'pagado',nid:xq.id,pid:(xq.c&&xq.c.id)||null,nombre:xq.nombre,mes:Cq.mes,monto:xq.monto,fecha:xq.pago.fecha||'',medio:xq.pago.medio||'',origen:xq.pago.origen||''};render();return;}
  if(d.pago){var Cp=cobros(),xp=Cp.L.filter(function(z){return z.id===d.pago;})[0];if(!xp)return;U.hoja={t:'pago',nid:xp.id,pid:(xp.c&&xp.c.id)||null,nombre:xp.nombre,mes:Cp.mes,monto:String(xp.cuota||''),medio:'Transferencia',dia:0};render();return;}
  if(d.dia!=null){U.dia=+d.dia;render();return;}
  if(d.tab){var p=d.tab.split('|');U.tab[p[0]]=p[1];history.replaceState(null,'','#/c/'+encodeURIComponent(p[0])+'/'+p[1]);render();return;}
@@ -1523,6 +1531,8 @@ document.addEventListener('click',function(ev){var t=ev.target.closest('button,[
   var notaT=H.tags.concat(nt?[nt]:[]).join(' · ');
   if(notaT){encolar(H.cid,{tipo:'nota',dia:H.dia,ejercicio:{nombre:H.e.nombre},tags:H.tags.indexOf('Molestia')>=0?['dolor']:[],observacion:{texto:H.e.nombre+' — '+notaT+' · desde tu celular',fecha:H.iso}},[nom1(c4.nombre)+' · '+H.e.nombre,'«'+notaT+'»'],'nota|'+kk);hizo=true;}
   if(!hizo){toast('Elegí un RIR o escribí una nota');return;}U.hoja=null;render();toast('Guardado en el celular');return;}
+ if(a==='d-pago'){var Hd=U.hoja;encolar(Hd.pid||null,{tipo:'pago',cliente:Hd.nid,mes:Hd.mes,borrar:true},[nom1(Hd.nombre)+' · cuota de '+MES[+Hd.mes.slice(5)-1],'Pago deshecho'],'pago|'+Hd.nid+'|'+Hd.mes);U.hoja=null;render();toast('Pago deshecho');return;}
+ if(a==='v-ficha'){var Hf=U.hoja;U.hoja=null;ir('c/'+Hf.pid);return;}
  if(a==='g-pago'){var Hp=U.hoja,mt=parseFloat(String((($('#hmonto')||{}).value)||'').replace(',','.'));if(!(mt>0)){toast('Revisá el monto');return;}var fp=new Date();fp.setDate(fp.getDate()-Hp.dia);
   encolar(Hp.pid||null,{tipo:'pago',cliente:Hp.nid,mes:Hp.mes,monto:mt,fecha:ymd(fp),medio:Hp.medio},[nom1(Hp.nombre)+' · cuota de '+MES[+Hp.mes.slice(5)-1],usd(mt)+' · '+Hp.medio.toLowerCase()],'pago|'+Hp.nid+'|'+Hp.mes);U.hoja=null;render();toast('Guardado en el celular');return;}
  if(a==='sync'){if(COLA.length)return enviarYActualizar();return actualizar(false);}
