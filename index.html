@@ -1355,9 +1355,14 @@ var toastT;function toast(t,uids){var e=$('#toast');U.deshacer=uids&&uids.length
 
 /* ================= actualizar (lo único que usa internet) ================= */
 async function abrirZ(b64){var bin=Uint8Array.from(atob(b64),function(c){return c.charCodeAt(0);});var st=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));return new Response(st).text();}
+/* 16 nov 2026 · un pedido al puente que no vuelve (Google a veces lo deja colgado) trababa Mi panel. Ahora cada pedido tiene un tiempo límite; si se pasa, se corta y se reintenta. */
+function fetchT(u,o,ms){o=o||{};var ac=window.AbortController?new AbortController():null,t;if(ac)o.signal=ac.signal;
+ var lim=new Promise(function(_,no){t=setTimeout(function(){try{if(ac)ac.abort();}catch(e){}no(new Error('El puente tardó demasiado en responder.'));},ms||20000);});
+ var p=fetch(u,o).then(function(r){return r.text().then(function(x){clearTimeout(t);return {ok:r.ok,status:r.status,text:function(){return Promise.resolve(x);},json:function(){return new Promise(function(si){si(JSON.parse(x));});}};});},function(e){clearTimeout(t);throw e;});
+ return Promise.race([p,lim]);}
 async function bajar(conf,ver){var z=typeof DecompressionStream!=='undefined';
  var u=conf.url+'?accion=profe&clave='+encodeURIComponent(conf.clave)+(ver?'&v='+encodeURIComponent(ver):'')+(z?'&z=1':'');
- var r=await fetch(u,{cache:'no-store',redirect:'follow'});if(!r.ok)throw new Error('El puente respondió '+r.status);
+ var r=await fetchT(u,{cache:'no-store',redirect:'follow'},35000);if(!r.ok)throw new Error('El puente respondió '+r.status);
  var j=await r.json();if(!j.ok)throw new Error(j.error==='clave'?'La clave no es correcta.':j.error==='accion'?'Falta pegar el código nuevo del puente (acción «profe»).':(j.error||'Error del puente'));
  if(j.z)j=JSON.parse(await abrirZ(j.z));return j;}
 async function actualizar(silencio){if(U.leyendo||!CONF)return;if(!navigator.onLine){if(!silencio)toast('Sin conexión: seguís viendo los datos guardados');return;}
@@ -1379,7 +1384,7 @@ function autoAct(){if(!CONF||!D||U.leyendo||U.enviando||document.visibilityState
 var envT=null;function programarEnvio(ms){clearTimeout(envT);envT=setTimeout(enviarSolo,ms||8000);}
 async function enviarSolo(){if(!CONF||!COLA.length||U.leyendo||U.enviando||!navigator.onLine)return;if(U.deshacer){programarEnvio(3000);return;}
  U.enviando=true;var lote=COLA.slice(0,200),bien=false;
- try{var r=await fetch(CONF.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({profe:1,clave:CONF.clave,items:lote.map(function(x){return {uid:x.uid,cid:x.cid,d:x.d};})})});
+ try{var r=await fetchT(CONF.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({profe:1,clave:CONF.clave,items:lote.map(function(x){return {uid:x.uid,cid:x.cid,d:x.d};})})},35000);
   var j=await r.json();if(j&&j.ok){var ok={};(j.uids||[]).forEach(function(u){ok[u]=1;});ENVI=ENVI.concat(COLA.filter(function(x){return ok[x.uid];}).map(function(x){return Object.assign({},x,{env:Date.now()});}));COLA=COLA.filter(function(x){return !ok[x.uid];});guarda(K_COLA,COLA);guarda(K_ENV,ENVI);bien=true;}}
  catch(e){}
  U.enviando=false;if(bien){await actualizar(true);limpiarEnviados();renderSeguro(true);if(COLA.length)programarEnvio(5000);}}
@@ -1387,7 +1392,7 @@ setInterval(autoAct,60000);document.addEventListener('visibilitychange',autoAct)
 
 async function enviarYActualizar(){if(U.leyendo||U.enviando)return;if(!navigator.onLine){toast('No hay conexión. Tus cambios siguen guardados y se mandan solos cuando vuelva.');return;}clearTimeout(envT);
  U.leyendo=true;render();var lote=COLA.slice(0,200);
- try{var r=await fetch(CONF.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({profe:1,clave:CONF.clave,items:lote.map(function(x){return {uid:x.uid,cid:x.cid,d:x.d};})})});
+ try{var r=await fetchT(CONF.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({profe:1,clave:CONF.clave,items:lote.map(function(x){return {uid:x.uid,cid:x.cid,d:x.d};})})},35000);
   var j=await r.json();if(!j.ok)throw new Error(j.error==='clave'?'La clave no es correcta.':(j.error||'Error del puente'));
   var ok={};(j.uids||[]).forEach(function(u){ok[u]=1;});ENVI=ENVI.concat(COLA.filter(function(x){return ok[x.uid];}).map(function(x){return Object.assign({},x,{env:Date.now()});}));COLA=COLA.filter(function(x){return !ok[x.uid];});
   guarda(K_COLA,COLA);guarda(K_ENV,ENVI);U.hoja=null;U.leyendo=false;toast('Cambios enviados');await actualizar(true);limpiarEnviados();render();toast('Cambios enviados y datos actualizados');}
