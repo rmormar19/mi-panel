@@ -772,7 +772,7 @@ V.cobros=function(){var C=cobros(),m=new Date();var s=cab('Cobros',MES[m.getMont
   '<div class="bar"><i style="width:'+(pc*100).toFixed(1)+'%;background:var(--grn)"></i></div><div style="display:flex;justify-content:space-between;font-size:12.5px"><span class="ok">'+Math.round(pc*100)+' % cobrado</span><span class="wa">'+usd(C.total-C.cobrado)+' por cobrar</span></div></div>';
  if(C.pend.length)s+='<div class="sh"><h2>Por cobrar</h2><span>'+C.pend.length+'</span></div><div class="card">'+C.pend.map(function(x){return '<div class="row"><span class="ini" style="background:'+col(x.nombre)+'">'+esc(ini(x.nombre))+'</span><span class="tx"><b>'+esc(x.nombre)+'</b><small>'+(x.online?'Online · ':'')+(x.viaje?'de viaje':'cuota del mes')+' · '+usd(x.cuota)+'</small></span><button type="button" class="marcar" data-pago="'+esc(x.id)+'">Marcar</button></div>';}).join('')+'</div>';
  var ok=C.L.filter(function(x){return x.pago;});
- s+='<div class="sh"><h2>Pagaron</h2><span>'+ok.length+'</span></div><div class="card">'+(ok.map(function(x){var p=x.pago;return filaCli(x.c||{id:'',nombre:x.nombre},p.origen==='celular'?(p.pend?'guardado en el celular · sin enviar':'enviado desde el celular'):p.origen==='panel'?'marcado en el Monitor':(p.fecha?p.fecha.split('-').reverse().slice(0,2).join('/'):'')+(p.medio?' · '+esc(p.medio.toLowerCase()):''),'<span class="chip ok num">'+usd(x.monto)+'</span>');}).join('')||'<div class="vacio">Nadie pagó todavía este mes.</div>')+
+ s+='<div class="sh"><h2>Pagaron</h2><span>'+ok.length+'</span></div><div class="card">'+(ok.map(function(x){var p=x.pago;return filaCli(x.c||{id:'',nombre:x.nombre},p.origen==='celular'?(p.pend?'guardado en el celular · sin enviar':'enviado desde el celular'):p.origen==='panel'||p.origen==='monitor'?'marcado en el Monitor':(p.fecha?p.fecha.split('-').reverse().slice(0,2).join('/'):'')+(p.medio?' · '+esc(p.medio.toLowerCase()):''),'<span class="chip ok num">'+usd(x.monto)+'</span>');}).join('')||'<div class="vacio">Nadie pagó todavía este mes.</div>')+
   (C.sueldo?'<div class="row"><span class="ini" style="background:var(--a1)">GYM</span><span class="tx"><b>Sueldo del gimnasio</b><small>'+(C.gp?'cobrado'+(C.gp.fecha?' el '+C.gp.fecha.split('-').reverse().slice(0,2).join('/'):''):'pendiente')+'</small></span><span class="chip '+(C.gp?'ok':'wa')+' num">'+usd(C.sueldo)+'</span></div>':'')+'</div>';
  if(C.gym.length)s+='<p class="muted" style="font-size:12.5px;margin:12px 4px">Del gimnasio (los cubre tu sueldo): '+C.gym.map(function(g){return esc(nom1(g.nombre));}).join(', ')+'.</p>';
  if(r)s+='<p class="muted" style="font-size:12.5px;margin:4px 4px">Dólar '+(C.cot.fuente==='BROU'?'BROU ':'')+'compra $U '+nf1.format(r)+(C.cot.fecha?' · '+C.cot.fecha.split('-').reverse().slice(0,2).join('/'):'')+'.</p>';
@@ -882,12 +882,23 @@ function estLocal(cid,iso){var r=buscaK('est|'+cid+'|'+iso);if(!r)return estApp(
 /* 12 nov 2026 · lo que el cliente marcó en su app y el Monitor todavía no aplicó (lo manda el puente aparte) */
 function estApp(cid,iso){var L=(D&&D.app&&D.app[cid])||[],x=null;for(var i=0;i<L.length;i++)if(L[i].iso===iso)x=L[i];if(!x||!x.estado)return null;return {v:x.estado,pend:false,app:true};}
 function pagoLocal(nid,mes){var r=buscaK('pago|'+nid+'|'+mes);if(!r)return null;var d=r.x.d;return {fecha:d.fecha,medio:d.medio,monto:d.monto,origen:'celular',pend:r.pend};}
+/* 15 nov 2026 · Ricky: «cuando un cliente me paga, que se refleje automáticamente en Mi negocio». «Pagó» tildado en el Monitor
+   (mes en curso) y sin pago en Mi negocio: se manda una vez el pago real (su cuota, hoy, origen 'monitor'), así queda aunque
+   Mi negocio no esté abierto. Destildado: se borra, pero sólo el que puso esto (el puente no toca lo cargado a mano). */
+function sincPagosMon(){var n=NEG();if(!n||!D||!D.mesPagos)return;var mes=D.mesPagos;
+ n.cli.forEach(function(x){if(x.tipo==='gimnasio'||x.cobra===false)return;var p=panelDe(x);if(!p)return;
+  var doc=n.pagos.filter(function(z){return z.cliente===x.id&&z.mes===mes;})[0],k='pagoMon|'+x.id+'|'+mes,r=buscaK(k),quiere=p.pago?(doc||pagoLocal(x.id,mes)?null:'crear'):(doc&&doc.origen==='monitor'?'borrar':null);
+  if(!quiere){if(r&&r.pend){COLA=COLA.filter(function(q){return q.k!==k;});guarda(K_COLA,COLA);}return;}
+  if(r&&(!!r.x.d.borrar)===(quiere==='borrar'))return;
+  encolar(p.id,quiere==='crear'?{tipo:'pago',cliente:x.id,mes:mes,monto:+x.cuota>0?+x.cuota:null,fecha:hoyISO(),medio:'',origen:'monitor'}:{tipo:'pago',cliente:x.id,mes:mes,borrar:true,origen:'monitor'},
+   [nom1(p.nombre)+' · cuota de '+MES[+mes.slice(5)-1],quiere==='crear'?'Pagó (marcado en el Monitor)':'Pago destildado en el Monitor'],k);});}
 var hoyISO=function(){return ymd(new Date());};
 /* lo enviado se sigue mostrando hasta que el Monitor lo aplica (o 7 días) */
 function limpiarEnviados(){ENVI=ENVI.filter(function(x){if(Date.now()-(x.env||x.t)>7*864e5)return false;
   if(x.d.tipo==='ejercicio'){var cE=porId(x.cid);if(!cE)return false;return opEj(JSON.parse(JSON.stringify(cE.rutina||[])),x.d);}
   if(x.d.tipo==='altaCliente')return !porId(x.cid)&&Date.now()-(x.env||x.t)<7*864e5;
   if(x.d.tipo==='bajaCliente'){var cb2=porId(x.cid);return !!cb2&&!cb2.baja&&Date.now()-(x.env||x.t)<7*864e5;}
+  if(x.k&&x.k.indexOf('pagoMon|')===0){var nM=NEG(),cM=porId(x.cid),hay=!!(nM&&nM.pagos.some(function(p){return p.cliente===x.d.cliente&&p.mes===x.d.mes;})),tilde=!!(cM&&cM.pago&&D.mesPagos===x.d.mes);return x.d.borrar?hay&&!tilde:!hay&&tilde;}
   if(x.d.tipo==='pago'){var n=NEG();return !(n&&n.pagos.some(function(p){return p.cliente===x.d.cliente&&p.mes===x.d.mes;}));}
   if(x.k&&x.k.indexOf('est|')===0){var c=porId(x.cid);if(!c)return false;var iso=x.k.split('|')[2],dd=(c.rutina||[]).filter(function(z){return iDia(z.dia)===iDia(x.d.dia);})[0];
    if(!dd||+lunDatos()!==+lunesCal(new Date(iso+'T12:00')))return true;var want=x.d.tipo==='libre'?'libre':x.d.estado;return !(want==='libre'?dd.libre:dd.estado===want);}
@@ -1347,6 +1358,7 @@ async function actualizar(silencio){if(U.leyendo||!CONF)return;if(!navigator.onL
  try{var j=await bajar(CONF,D&&D.v);if(j.igual){D.chequeado=new Date().toISOString();guarda(K_DATOS,D);if(!silencio)toast('Ya estaba todo al día');}
   else{j.chequeado=j.leido;D=j;cambio=true;if(!guarda(K_DATOS,D))toast('No se pudo guardar en el celular');else if(!silencio)toast('Datos actualizados');limpiarEnviados();}}
  catch(e){if(!silencio)toast(e.message&&!/fetch|network|load/i.test(e.message)?e.message:'No hay conexión con el puente');}
+ try{sincPagosMon();}catch(e){}
  U.leyendo=false;if(!silencio)render();else renderSeguro(cambio);}
 /* 12 nov 2026 · se actualiza solo (pedido de Ricky: lo que se cambia en el Monitor o en la app del cliente tiene que aparecer
    sin tocar nada): al abrir, al volver a la app, al recuperar internet y cada minuto mientras está a la vista. Si nada cambió,
@@ -1526,7 +1538,7 @@ async function conectar(cf){var E=$('#err'),B=document.querySelector('[data-act=
  if(!cf){if(E)E.textContent='Ese código no se reconoce. Copialo de nuevo desde el Monitor.';return;}
  if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(cf.url)&&!/^http:\/\/localhost/.test(cf.url)){if(E)E.textContent='La URL del puente tiene que terminar en /exec.';return;}
  if(E)E.textContent='';if(B){B.disabled=true;B.textContent='Bajando tus datos…';}
- try{var j=await bajar(cf,null);j.chequeado=j.leido;CONF=cf;D=j;guarda(K_CONF,CONF);guarda(K_DATOS,D);history.replaceState(null,'','#/');render();toast('Listo: tus datos ya están en el celular');}
+ try{var j=await bajar(cf,null);j.chequeado=j.leido;CONF=cf;D=j;guarda(K_CONF,CONF);guarda(K_DATOS,D);try{sincPagosMon();}catch(e){}history.replaceState(null,'','#/');render();toast('Listo: tus datos ya están en el celular');}
  catch(e){if(E)E.textContent=e.message&&!/fetch|network|load/i.test(e.message)?e.message:'No hay conexión con el puente. Probá de nuevo en un rato.';if(B){B.disabled=false;B.textContent='Conectar y bajar los datos';}}}
 document.addEventListener('input',function(ev){if(ev.target.id==='q'){U.q=ev.target.value;var r=ruta();if(r.v==='clientes'){var pos=ev.target.selectionStart;render();var q=$('#q');q.focus();try{q.setSelectionRange(pos,pos);}catch(e){}}}});
 
