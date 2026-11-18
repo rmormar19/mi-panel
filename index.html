@@ -846,7 +846,7 @@ V.ajustes=function(){var kb=0;try{kb=Math.round((localStorage.getItem(K_DATOS)||
   '<div class="sw"><span><b>Modo claro</b><small>Igual que en el Monitor y la app de tus clientes.</small></span><button type="button" class="tog" data-act="tema" aria-pressed="'+document.documentElement.classList.contains('claro')+'" aria-label="Modo claro"></button></div>'+
   '<div class="sw"><span><b>Datos guardados</b><small>'+(D?(D.clientes||[]).length+' clientes · '+kb+' KB · actualizados '+hace(D.leido):'Nada todavía')+'</small></span></div></div>'+
   '<div style="margin-top:14px;display:grid;gap:10px"><button type="button" class="pri" data-act="sync">'+I.sync+'Actualizar ahora</button><button type="button" class="sec" data-act="salir" style="color:var(--redt)">Desconectar y borrar los datos del celular</button></div>'+
-  '<p class="muted" style="font-size:12.5px;margin:14px 4px">Solo se usa internet cuando tocás Actualizar (o al abrir, si lo activás). Todo lo demás funciona en modo avión.</p>';};
+  '<p class="muted" style="font-size:12.5px;margin:14px 4px">Lo que anotás se manda solo unos segundos después. Sin internet (o en modo avión) podés ver y anotar igual: queda guardado en el celular y se manda solo apenas vuelva la conexión.</p>';};
 
 /* conexión (primera vez) */
 function decod(t){t=String(t||'').trim();var m=t.match(/#k=([\w-]+)/);if(m)t=m[1];try{var j=JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));if(j&&j.u&&j.k)return {url:j.u,clave:j.k};}catch(e){}return null;}
