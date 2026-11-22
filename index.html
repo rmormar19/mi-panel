@@ -412,6 +412,9 @@ input,textarea,select,input.in,textarea.wab,.minin{font-size:16px!important}
 /* 11 nov 2026 · «Antropometría» no entra en un recuadro chico: se corta en dos renglones con guion */
 .mas .tile b{overflow-wrap:break-word;hyphens:manual;line-height:1.1}
 /* 11 nov 2026 · ficha → Progreso */
+/* 22 nov 2026 · Antropometría: cada medida se toca para ver su gráfico */
+table.t tr[data-go]{cursor:pointer;-webkit-tap-highlight-color:transparent}table.t tr[data-go]:active td{background:var(--surf2)}
+table.t tr[data-go] td:first-child::after{content:'\203A';margin-left:6px;color:var(--tx4);font-weight:700}
 .pej .pejr{gap:10px}.pej .pejr:last-child{border-bottom:0}.spk{flex:none;display:block}.spk.vac{width:84px;text-align:center;color:var(--tx4)}
 .gdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px}
 .tabs2{margin-top:2px}.tabs2 button{font-size:13px}
@@ -790,15 +793,17 @@ function medidasHTML(c){var M=c.medidas||{},F=M.fechas||[],T=tomas(c);if(!T.leng
  var n=T.length,a=T[n-1],b=n>1?T[n-2]:-1,fd=function(i){return fFecha(fechaL(F[i]),{day:'numeric',month:'short'});};
  var hay=function(f,i){return i>=0&&(f.valores||[])[i]!=null&&f.valores[i]!=='';};var fil=(M.filas||[]).filter(function(f){return hay(f,a)||hay(f,b);});
  /* 8 nov 2026: perímetro solo si el nombre lo es (cintura, cadera, pierna, brazo…); lo demás de tu protocolo son pliegues en mm */
- var grupo=function(f){var u=f.unidad||'',nn=N(f.nombre);if(/masa corporal|peso|talla|envergadura/.test(nn))return 'Básicas';if(/humero|biestiloideo|femur|biepicond|bicondil|diametro/.test(nn))return 'Diámetros (cm)';
-  if(u==='mm')return 'Pliegues (mm)';if(/perim|cintura|cadera|^pierna|brazo|muslo medio|pantorrilla$|cuello|torax|pecho|antebrazo|gemelo|muneca|tobillo/.test(nn))return 'Perímetros (cm)';return 'Pliegues (mm)';};
+ var grupo=medGrupo;
  var G={};fil.forEach(function(f){var g=grupo(f);(G[g]=G[g]||[]).push(f);});
  var s='<div class="card"><table class="t"><thead><tr><th>Medida</th>'+(b>=0?'<th>'+fd(b)+'</th>':'')+'<th>'+fd(a)+'</th>'+(b>=0?'<th>Cambio</th>':'')+'</tr></thead><tbody>';
  ['Básicas','Perímetros (cm)','Pliegues (mm)','Diámetros (cm)'].forEach(function(g){if(!G[g])return;s+='<tr class="g"><td colspan="4">'+g+'</td></tr>';G[g].forEach(function(f){var va=hay(f,a)?+String(f.valores[a]).replace(',','.'):NaN,vb=hay(f,b)?+String(f.valores[b]).replace(',','.'):NaN,dif=isNaN(va)||isNaN(vb)?null:Math.round((va-vb)*10)/10;
-  s+='<tr><td>'+esc(f.nombre)+'</td>'+(b>=0?'<td class="muted">'+(isNaN(vb)?'—':nf1.format(vb))+'</td>':'')+'<td><b>'+(isNaN(va)?'—':nf1.format(va))+'</b></td>'+(b>=0?'<td class="'+(dif==null||dif===0?'muted':dif<0?'ok':'wa')+'">'+(dif==null?'—':(dif>0?'+':'')+nf1.format(dif))+'</td>':'')+'</tr>';});
+  s+='<tr data-go="med/'+esc(c.id)+'/'+encodeURIComponent(f.nombre)+'"><td>'+esc(f.nombre)+'</td>'+(b>=0?'<td class="muted">'+(isNaN(vb)?'—':nf1.format(vb))+'</td>':'')+'<td><b>'+(isNaN(va)?'—':nf1.format(va))+'</b></td>'+(b>=0?'<td class="'+(dif==null||dif===0?'muted':dif<0?'ok':'wa')+'">'+(dif==null?'—':(dif>0?'+':'')+nf1.format(dif))+'</td>':'')+'</tr>';});
   if(g==='Pliegues (mm)'&&G[g].length>1){var sa=0,sb=0,na=0,nb=0,ambos=b>=0;G[g].forEach(function(f){var va=hay(f,a)?+String(f.valores[a]).replace(',','.'):NaN,vb=hay(f,b)?+String(f.valores[b]).replace(',','.'):NaN;if(!isNaN(va)){sa+=va;na++;}if(!isNaN(vb)){sb+=vb;nb++;}if(isNaN(va)||isNaN(vb))ambos=false;});
-   if(na>1){var ds=ambos?Math.round((sa-sb)*10)/10:null;s+='<tr class="sum"><td>Suma de pliegues</td>'+(b>=0?'<td class="muted">'+(ambos?nf1.format(sb):'—')+'</td>':'')+'<td><b>'+nf1.format(sa)+'</b></td>'+(b>=0?'<td class="'+(ds==null||ds===0?'muted':ds<0?'ok':'wa')+'">'+(ds==null?'—':(ds>0?'+':'')+nf1.format(ds))+'</td>':'')+'</tr>';}}});
- return s+'</tbody></table></div><p class="muted" style="font-size:12.5px;margin:10px 4px">'+n+' toma'+(n===1?'':'s')+' · la última el '+fFecha(fechaL(F[a]),{day:'numeric',month:'long',year:'numeric'})+'.</p>';}
+   if(na>1){var ds=ambos?Math.round((sa-sb)*10)/10:null;s+='<tr class="sum" data-go="med/'+esc(c.id)+'/'+MED_SUMA+'"><td>Suma de pliegues</td>'+(b>=0?'<td class="muted">'+(ambos?nf1.format(sb):'—')+'</td>':'')+'<td><b>'+nf1.format(sa)+'</b></td>'+(b>=0?'<td class="'+(ds==null||ds===0?'muted':ds<0?'ok':'wa')+'">'+(ds==null?'—':(ds>0?'+':'')+nf1.format(ds))+'</td>':'')+'</tr>';}}});
+ return s+'</tbody></table></div><p class="muted" style="font-size:12.5px;margin:10px 4px">'+n+' toma'+(n===1?'':'s')+' · la última el '+fFecha(fechaL(F[a]),{day:'numeric',month:'long',year:'numeric'})+'. Tocá una medida para ver su gráfico grande.</p>';}
+/* 22 nov 2026 · grupo de cada medida (8 nov: perímetro sólo si el nombre lo es; lo demás de tu protocolo son pliegues en mm) */
+function medGrupo(f){var u=f.unidad||'',nn=N(f.nombre);if(/masa corporal|peso|talla|envergadura/.test(nn))return 'Básicas';if(/humero|biestiloideo|femur|biepicond|bicondil|diametro/.test(nn))return 'Diámetros (cm)';
+ if(u==='mm')return 'Pliegues (mm)';if(/perim|cintura|cadera|^pierna|brazo|muslo medio|pantorrilla$|cuello|torax|pecho|antebrazo|gemelo|muneca|tobillo/.test(nn))return 'Perímetros (cm)';return 'Pliegues (mm)';}
 
 V.rutinas=function(){var dow=U.dia!=null?U.dia:new Date().getDay(),lun=lunDatos(),L=sesionesDia(dow);
  var s=cab('Rutinas','Semana del '+dm(lun)+(semVieja()?' (la anterior)':''))+'<div class="semd" role="group" aria-label="Día">'+[1,2,3,4,5,6,0].map(function(i){var f=fechaDe(lun,DS[i]),n=sesionesDia(i).length;return '<button type="button" data-dia="'+i+'" aria-pressed="'+(i===dow)+'">'+D3[i]+'<b class="num">'+f.getDate()+'</b><i class="'+(n?'si':'')+'"></i></button>';}).join('')+'</div>';
@@ -1271,11 +1276,11 @@ function animarLineas(){try{var L=document.querySelectorAll('.glin:not([data-an]
  if(el.animate&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){el.style.animation='none';var a=el.animate([{strokeDashoffset:n},{strokeDashoffset:0}],{duration:1000,delay:100,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});a.onfinish=function(){this.effect&&this.effect.target&&(this.effect.target.style.strokeDashoffset='0');};}
  else el.style.strokeDashoffset='0';}}catch(e){}}
 var GRAF={},GRAFn=0;
-function grafLinea(vals,etq,col,uni,marcas,det,tit,ex){ex=ex||{};if(vals.length<2)return '<div class="vacio" style="padding:14px">Hace falta más de una semana con datos.</div>';
+function grafLinea(vals,etq,col,uni,marcas,det,tit,ex){ex=ex||{};if(vals.length<2)return '<div class="vacio" style="padding:14px">'+(ex.vacio||'Hace falta más de una semana con datos.')+'</div>';
  var W=340,H=150,x0=30,x1=330,y0=14,y1=120,mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),lo=Math.floor(mn*.85),hi=Math.ceil(mx*1.1);if(hi===lo)hi=lo+1;
  var X=function(i){return x0+i*(x1-x0)/(vals.length-1);},Y=function(v){return y1-(v-lo)/(hi-lo)*(y1-y0);},pts=vals.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);}),id='g'+(++GRAFn);
  GRAF[id]={mejor:ex.mejor||'',ant:ex.ant||'la semana anterior',antFijo:!!ex.ant,mot:ex.mot||[],W:W,H:H,x:vals.map(function(v,i){return X(i);}),y:vals.map(function(v){return Y(v);}),y0:y0,y1:y1,v:vals,etq:etq,tit:tit||etq,det:det||[],uni:uni,col:col};
- var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;overflow:visible" role="img" aria-label="'+esc(uni)+' por semana"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity=".35"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>';
+ var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;overflow:visible" role="img" aria-label="'+esc(uni)+' '+(ex.por||'por semana')+'"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity=".35"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>';
  for(var k=0;k<3;k++){var v=lo+(hi-lo)*k/2;s+='<line x1="'+x0+'" x2="'+x1+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="var(--line)"/><text x="'+(x0-6)+'" y="'+(Y(v)+3).toFixed(1)+'" fill="var(--tx3)" font-size="10" text-anchor="end">'+nf1.format(v)+'</text>';}
  s+='<path class="garea" d="M'+pts.join(' L')+' L'+X(vals.length-1).toFixed(1)+','+y1+' L'+x0+','+y1+' Z" fill="url(#'+id+')"/><polyline class="glin" points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2.6" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px '+col+')"/>';
  vals.forEach(function(v,i){s+='<circle class="gdot2" style="animation-delay:'+(0.25+0.6*i/Math.max(1,vals.length-1)).toFixed(2)+'s" cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="'+(i===vals.length-1?5:3)+'" fill="'+col+'" stroke="var(--surf)" stroke-width="2"/>';});
@@ -1284,7 +1289,7 @@ function grafLinea(vals,etq,col,uni,marcas,det,tit,ex){ex=ex||{};if(vals.length<
  (marcas||[]).forEach(function(i){s+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(vals[i]).toFixed(1)+'" r="7.5" fill="none" stroke="var(--yel)" stroke-width="2"/><text x="'+X(i).toFixed(1)+'" y="'+(Y(vals[i])+21).toFixed(1)+'" fill="var(--yel)" font-size="10" font-weight="600" text-anchor="middle">molestia</text>';});
  s+='<text x="'+(X(vals.length-1)-8).toFixed(1)+'" y="'+(Y(vals[vals.length-1])-9).toFixed(1)+'" fill="'+col+'" font-size="12" font-weight="700" text-anchor="end">'+nf1.format(vals[vals.length-1])+' '+esc(uni)+'</text>';
  var paso=Math.ceil(etq.length/6);etq.forEach(function(e,i){if(i%paso===0||i===etq.length-1)s+='<text x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" fill="var(--tx3)" font-size="10" text-anchor="middle">'+e+'</text>';});
- return '<div class="gw" data-g="'+id+'">'+s+'</svg><div class="gtt" role="status" aria-live="polite" hidden></div><p class="ghint">Tocá o deslizá el dedo sobre el gráfico para ver cada semana</p></div>';}
+ return '<div class="gw" data-g="'+id+'">'+s+'</svg><div class="gtt" role="status" aria-live="polite" hidden></div><p class="ghint">'+(ex.hint||'Tocá o deslizá el dedo sobre el gráfico para ver cada semana')+'</p></div>';}
 /* tocar / deslizar sobre el gráfico: el punto más cercano, con su cartel */
 var MOTIV_MP={descarga:'Semana de descarga',viaje:'De viaje',ausencia:'No entrenó esa semana',reentrada:'Reentrada',falta:'Faltó a la sesión',enfermedad:'Falta por enfermedad',lesion:'Lesión',molestia:'Molestia en este ejercicio'};
 function motivosSemMP(c,lun,nom){var k=ymd(new Date(lun)),L=(c.motivos||[]).filter(function(x){return x&&x.l===k&&(x.t!=='molestia'||(nom&&N(x.ej||'')===N(nom)));}),ya={},o=[],nf=0;
@@ -1295,7 +1300,7 @@ function grafMostrar(w,clientX){var g=GRAF[w.getAttribute('data-g')];if(!g)retur
  var gu=w.querySelector('.gguia'),pt=w.querySelector('.gsel'),tt=w.querySelector('.gtt');
  gu.setAttribute('x1',g.x[i]);gu.setAttribute('x2',g.x[i]);gu.setAttribute('opacity','1');pt.setAttribute('cx',g.x[i]);pt.setAttribute('cy',g.y[i]);pt.setAttribute('opacity','1');
  var cx2='';if(i>0){var df=Math.round((g.v[i]-g.v[i-1])*10)/10,cl=!df?'':(g.mejor==='sube'?(df>0?'ok':'wa'):g.mejor==='baja'?(df<0?'ok':'wa'):'');
-  cx2='<em class="gctx '+cl+'">'+(df>0?'▲ +'+nf1.format(df):df<0?'▼ '+nf1.format(Math.abs(df)):'= igual')+(df?' '+esc(g.uni):'')+' vs. '+esc(g.antFijo?g.ant:String(g.tit[i-1]||g.ant).replace(/^S/,'s').replace(/^Esta semana$/,'esta semana'))+'</em>';}
+  cx2='<em class="gctx '+cl+'">'+(df>0?'▲ +'+nf1.format(df):df<0?'▼ '+nf1.format(Math.abs(df)):'= igual')+(df?' '+esc(g.uni):'')+' vs. '+esc(g.antFijo?g.ant:String(g.tit[i-1]||g.ant).replace(/^[ST]/,function(m){return m.toLowerCase();}).replace(/^Esta semana$/,'esta semana'))+'</em>';}
  var mt=(g.mot[i]||[]).filter(Boolean);
  tt.innerHTML='<small>'+esc(g.tit[i]||'')+'</small><b style="color:'+g.col+'">'+nf1.format(g.v[i])+' '+esc(g.uni)+'</b>'+(g.det[i]?'<span>'+esc(g.det[i])+'</span>':'')+cx2+(mt.length?'<i class="gmot">'+mt.map(esc).join(' · ')+'</i>':'');tt.hidden=false;
  /* 18 nov 2026 · se mide todo junto y después se mueve el cartel: un solo cálculo de la página por movimiento del dedo (antes, dos) */
@@ -1320,6 +1325,30 @@ V.ej=function(cid,nombre){var c=porId(cid);if(!c)return cab('No encontrado');var
  var R=W.map(function(w){return parseInt(w.reps,10)||0;});
  s+='<div class="card" style="margin-top:10px"><div class="ch"><b>Repeticiones</b><span>de esa serie</span></div>'+grafLinea(R,etq,'var(--grn)','reps',null,W.map(function(w){return [w.peso||'',w.rir!==''&&w.rir!=null?'RIR '+w.rir:''].filter(Boolean).join(' · ');}),W.map(function(w){return w.act?'Esta semana':'Semana del '+dm(new Date(w.l));}),{mejor:'sube',mot:W.map(function(w){return motivosSemMP(c,w.l,nombre);})})+'</div>';
  return s+'<p class="muted" style="font-size:12.5px;margin:10px 4px">Las notas de molestia o dolor quedan marcadas en la semana en que se anotaron.</p>';};
+
+/* 22 nov 2026 · Antropometría con gráfico (pedido de Ricky): tocar una medida abre su gráfico a lo largo de las tomas,
+   igual que un ejercicio en Progreso. La suma de pliegues usa los sitios de la última toma y sólo las tomas que los tienen todos. */
+var MED_SUMA='suma-de-pliegues';
+function medNum(v){if(v==null||v==='')return null;var x=+String(v).replace(',','.');return isNaN(x)?null:x;}
+function medUni(f,g){if(f.unidad)return f.unidad;if(g==='Pliegues (mm)')return 'mm';return /masa corporal|peso/.test(N(f.nombre))?'kg':'cm';}
+V.med=function(cid,nombre){var c=porId(cid);if(!c)return cab('No encontrado');var M=c.medidas||{},F=M.fechas||[],T=tomas(c),fil=M.filas||[],suma=nombre===MED_SUMA;
+ var f=suma?null:(fil.filter(function(x){return x.nombre===nombre;})[0]||fil.filter(function(x){return N(x.nombre)===N(nombre);})[0]);
+ var tit=suma?'Suma de pliegues':(f?f.nombre:nombre),s=cab(esc(tit),esc(c.nombre));
+ if(!suma&&!f)return s+'<div class="card"><div class="vacio">Esa medida ya no está en las tomas.</div></div>';
+ var g=suma?'Pliegues (mm)':medGrupo(f),u=suma?'mm':medUni(f,g),P=[],ult=T[T.length-1];
+ var sitios=suma?fil.filter(function(x){return medGrupo(x)==='Pliegues (mm)'&&ult!=null&&medNum((x.valores||[])[ult])!=null;}):[];
+ T.forEach(function(i){var v=null;if(suma){if(sitios.length>1&&sitios.every(function(x){return medNum((x.valores||[])[i])!=null;}))v=Math.round(sitios.reduce(function(a,x){return a+medNum(x.valores[i]);},0)*10)/10;}
+  else v=medNum((f.valores||[])[i]);if(v!=null)P.push({v:v,d:fechaL(F[i])});});
+ if(!P.length)return s+'<div class="card"><div class="vacio">Todavía no hay datos de esta medida.</div></div>';
+ var fd=function(d,o){return fFecha(d,o||{day:'numeric',month:'short'});},a=P[P.length-1],b=P[0],dif=Math.round((a.v-b.v)*10)/10;
+ var mejor=g==='Pliegues (mm)'||/cintura|cadera|abdom/.test(N(tit))?'baja':'',cl=function(d){return !d?'muted':mejor?(d<0?'ok':'wa'):'';},sg=function(d){return (d>0?'+':d<0?'−':'')+nf1.format(Math.abs(d))+' '+esc(u);};
+ s+='<div class="kp"><div class="card"><span>Última toma</span><b class="num">'+nf1.format(a.v)+' '+esc(u)+'</b><small>'+fd(a.d,{day:'numeric',month:'long',year:'numeric'})+'</small></div>'+
+  '<div class="card"><span>Cambio</span><b class="num '+(P.length<2?'muted':cl(dif))+'">'+(P.length<2?'—':sg(dif))+'</b><small>'+(P.length<2?'una sola toma':'desde el '+fd(b.d)+' · '+P.length+' tomas')+'</small></div></div>';
+ var sub=suma?sitios.length+' pliegues: '+sitios.map(function(x){return x.nombre;}).join(', '):u+' · '+g.replace(/ \(.*\)$/,'').toLowerCase()+(mejor?' · bajar es buena señal':'');
+ s+='<div class="card" style="margin-top:10px"><div class="ch"><b>'+esc(tit)+'</b><span>'+esc(sub)+'</span></div>'+grafLinea(P.map(function(p){return p.v;}),P.map(function(p){return fd(p.d);}),'var(--a1)',u,null,[],P.map(function(p){return 'Toma del '+fd(p.d);}),{mejor:mejor,vacio:'Hace falta más de una toma para ver el gráfico.',hint:'Tocá o deslizá el dedo sobre el gráfico para ver cada toma',por:'por toma'})+'</div>';
+ s+='<div class="sh"><h2>Tomas</h2><span>de la más nueva a la más vieja</span></div><div class="card"><table class="t"><thead><tr><th>Fecha</th><th>'+esc(u)+'</th><th>Cambio</th></tr></thead><tbody>'+
+  P.map(function(p,k){var d=k?Math.round((p.v-P[k-1].v)*10)/10:null;return '<tr><td>'+fd(p.d,{day:'numeric',month:'short',year:'numeric'})+'</td><td><b>'+nf1.format(p.v)+'</b></td><td class="'+(d==null?'muted':cl(d))+'">'+(d==null?'—':d===0?'=':sg(d))+'</td></tr>';}).reverse().join('')+'</tbody></table></div>';
+ return s;};
 
 /* ================= Resumen semanal con avisos ================= */
 /* grupos musculares de la semana: completó = hizo todos los grupos pautados, sin importar el día (7 nov 2026).
